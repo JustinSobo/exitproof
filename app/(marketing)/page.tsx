@@ -85,8 +85,8 @@ export default function LandingPage() {
           Simple paid plans
         </h2>
         <p className="mt-3 max-w-2xl text-[var(--fog)]">
-          Trial conceptually covers 14 days — the product gates at 3 free
-          offboards until you subscribe.
+          Start with 3 free offboards on the trial gate — then subscribe to
+          Team, Growth, or Agency when you are ready.
         </p>
         <div className="mt-10 grid gap-6 lg:grid-cols-3">
           {paidPlans.map((plan) => (
