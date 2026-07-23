@@ -43,7 +43,7 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 - [x] **D4** Trial copy honesty: landing says "14 days", product gates 3 offboards — align
 - [x] **D5** `enterDemoAction` writes demo cookie even when live-configured — guard with `isDemoMode()`
 - [ ] **D6** Webhook plan resolution normalization across event types
-- [ ] **D7** Login error surfacing (currently generic)
+- [x] **D7** Login error surfacing (currently generic)
 
 ## Pillar E — Roles, membership, tenancy (score 3–4)
 

@@ -7,10 +7,17 @@ export const metadata = { title: "Sign in" };
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; message?: string }>;
 }) {
   const params = await searchParams;
   const demo = isDemoMode();
+  const error =
+    params.error === "callback"
+      ? "Sign-in link expired or was invalid. Request a new magic link."
+      : params.error
+        ? decodeURIComponent(params.error)
+        : null;
+  const message = params.message ? decodeURIComponent(params.message) : null;
 
   return (
     <div className="ep-atmosphere flex min-h-screen items-center justify-center px-6 py-16">
@@ -34,8 +41,15 @@ export default async function LoginPage({
             Email/password or magic link via Supabase Auth.
           </p>
         )}
-        {params.error ? (
-          <p className="mt-3 text-sm text-[var(--danger)]">Authentication error. Try again.</p>
+        {error ? (
+          <p className="mt-3 text-sm text-[var(--danger)]" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {message ? (
+          <p className="mt-3 text-sm text-[var(--teal-bright)]" role="status">
+            {message}
+          </p>
         ) : null}
 
         <form action={signInAction} className="mt-6 space-y-4">

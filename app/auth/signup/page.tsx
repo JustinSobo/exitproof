@@ -4,8 +4,15 @@ import { isDemoMode } from "@/lib/env";
 
 export const metadata = { title: "Sign up" };
 
-export default function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const params = await searchParams;
   const demo = isDemoMode();
+  const error = params.error ? decodeURIComponent(params.error) : null;
+
   return (
     <div className="ep-atmosphere flex min-h-screen items-center justify-center px-6 py-16">
       <div className="w-full max-w-md rounded-2xl border border-[var(--line)] bg-[#0b2430]/80 p-8 shadow-2xl backdrop-blur">
@@ -23,6 +30,11 @@ export default function SignupPage() {
             ? "Demo mode stores data in-memory for this process."
             : "Includes 3 free offboards on the trial gate."}
         </p>
+        {error ? (
+          <p className="mt-3 text-sm text-[var(--danger)]" role="alert">
+            {error}
+          </p>
+        ) : null}
 
         <form action={signUpAction} className="mt-6 space-y-4">
           <label className="block text-sm">

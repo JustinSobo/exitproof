@@ -10,3 +10,4 @@
 | 2026-07-22 | A6 | Migration `004_roles.sql`: `is_org_admin`, block free top-level org insert, admin-scoped updates/deletes; signup via `bootstrap_organization` | `npm run build` + `npm run lint` green | Next: D5 enterDemo guard |
 | 2026-07-22 | D5 | Guard `enterDemoAction` with `isDemoMode()` so live deployments cannot mint demo cookies | `npm run build` + `npm run lint` green | Next: D4 trial copy |
 | 2026-07-22 | D4 | Align landing trial copy to 3 free offboards (remove misleading 14-day claim) | `npm run build` + `npm run lint` green | Next: D7 login errors |
+| 2026-07-22 | D7 | Surface real login/signup error and success messages from query params | `npm run build` + `npm run lint` green | Next: D2 agency child cases |
