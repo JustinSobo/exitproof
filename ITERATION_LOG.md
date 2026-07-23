@@ -14,3 +14,4 @@
 | 2026-07-22 | D2 | Live dashboard/cases list parent + agency child org cases via shared `listCasesForOrg` | `npm run build` + `npm run lint` green | Next: D1 template IDs |
 | 2026-07-22 | D1 | Align TS template IDs with SQL seed UUIDs; live createCaseAction persists `template_id` | `npm run build` + `npm run lint` green | Next: B1 requires_evidence |
 | 2026-07-22 | B1 | Server-side evidence rules: block done without file/ticket when required; block close with open criticals (demo + live) | `npm run build` + `npm run lint` green | Next: D6 webhook plan normalize |
+| 2026-07-22 | D6 | Normalize Stripe plan resolution across checkout/subscription events (metadata + price IDs + customer fallback on delete) | `npm run build` + `npm run lint` green | Next: D3 usage reset or C1 questionnaire |

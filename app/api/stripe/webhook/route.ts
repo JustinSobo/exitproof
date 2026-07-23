@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { planFromStripePriceId } from "@/lib/billing/plans";
+import {
+  collectPriceIdsFromSubscriptionItems,
+  parsePlanId,
+  resolvePlanId,
+} from "@/lib/billing/resolve-plan";
 import { demoStore } from "@/lib/demo/store";
 import { hasStripe, isDemoMode } from "@/lib/env";
 import type { PlanId } from "@/lib/types";
@@ -42,40 +46,95 @@ export async function POST(request: Request) {
   }
 
   try {
-    if (
-      event.type === "checkout.session.completed" ||
-      event.type === "customer.subscription.updated"
-    ) {
-      const obj = event.data.object as {
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as {
+        id: string;
         metadata?: { org_id?: string; plan?: string };
-        customer?: string;
-        subscription?: string;
-        items?: { data?: Array<{ price?: { id?: string } }> };
+        customer?: string | { id?: string } | null;
+        subscription?: string | { id?: string } | null;
       };
 
-      let plan = (obj.metadata?.plan as PlanId | undefined) ?? undefined;
-      const orgId = obj.metadata?.org_id;
-      const priceId = obj.items?.data?.[0]?.price?.id;
-      if (!plan && priceId) {
-        plan = planFromStripePriceId(priceId) ?? undefined;
+      const orgId = session.metadata?.org_id;
+      const priceIds: string[] = [];
+      let metadataPlan: string | undefined = session.metadata?.plan;
+
+      try {
+        const lineItems = await stripe.checkout.sessions.listLineItems(
+          session.id,
+          { limit: 5 },
+        );
+        for (const item of lineItems.data) {
+          const price = item.price;
+          if (price && typeof price === "object" && price.id) {
+            priceIds.push(price.id);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not list checkout line items", err);
       }
 
+      const subscriptionId =
+        typeof session.subscription === "string"
+          ? session.subscription
+          : session.subscription?.id;
+
+      if (subscriptionId) {
+        try {
+          const sub = await stripe.subscriptions.retrieve(subscriptionId);
+          metadataPlan = metadataPlan || sub.metadata?.plan;
+          priceIds.push(...collectPriceIdsFromSubscriptionItems(sub.items));
+        } catch (err) {
+          console.warn("Could not retrieve subscription for checkout", err);
+        }
+      }
+
+      const plan = resolvePlanId({ metadataPlan, priceIds });
+      const customerId =
+        typeof session.customer === "string"
+          ? session.customer
+          : session.customer?.id;
+
       if (orgId && plan) {
-        await applyPlan(
-          orgId,
-          plan,
-          typeof obj.customer === "string" ? obj.customer : undefined,
-          typeof obj.subscription === "string" ? obj.subscription : undefined,
-        );
+        await applyPlan(orgId, plan, customerId, subscriptionId);
+      }
+    }
+
+    if (event.type === "customer.subscription.updated") {
+      const sub = event.data.object as {
+        metadata?: { org_id?: string; plan?: string };
+        customer?: string | { id?: string } | null;
+        id?: string;
+        items?: unknown;
+      };
+
+      const orgId = sub.metadata?.org_id;
+      const plan = resolvePlanId({
+        metadataPlan: sub.metadata?.plan,
+        priceIds: collectPriceIdsFromSubscriptionItems(sub.items),
+      });
+      const customerId =
+        typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+
+      if (orgId && plan) {
+        await applyPlan(orgId, plan, customerId, sub.id);
       }
     }
 
     if (event.type === "customer.subscription.deleted") {
-      const obj = event.data.object as {
+      const sub = event.data.object as {
         metadata?: { org_id?: string };
+        customer?: string | { id?: string } | null;
       };
-      if (obj.metadata?.org_id) {
-        await applyPlan(obj.metadata.org_id, "trial");
+      let orgId = sub.metadata?.org_id;
+      if (!orgId) {
+        const customerId =
+          typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+        if (customerId) {
+          orgId = (await findOrgIdByCustomer(customerId)) ?? undefined;
+        }
+      }
+      if (orgId) {
+        await applyPlan(orgId, "trial");
       }
     }
   } catch (err) {
@@ -84,6 +143,18 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ received: true });
+}
+
+async function findOrgIdByCustomer(customerId: string): Promise<string | null> {
+  if (isDemoMode()) return null;
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("organizations")
+    .select("id")
+    .eq("stripe_customer_id", customerId)
+    .maybeSingle();
+  return data?.id ?? null;
 }
 
 async function applyPlan(
@@ -119,3 +190,6 @@ async function applyPlan(
     payload: { plan, customerId, subscriptionId },
   });
 }
+
+// Re-export helpers for tests / clarity
+export { parsePlanId, resolvePlanId };
