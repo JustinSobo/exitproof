@@ -2,6 +2,7 @@
 
 | Date | Item | Summary | Verification | Follow-ups |
 | --- | --- | --- | --- | --- |
+| 2026-07-23 | Phase 1 / GridLogic spine | Azure Bicep stubs (`infra/`); migration `006_tenant_hardening` + `lib/tenancy`; domain JIT default-off / Entra `tid` join / refuse bootstrap under `GRIDLOGIC_MANAGED`; `scripts/provision-customer.ts` dry-run; DEMO_MODE refuse under prod/GridLogic (`instrumentation` + `lib/env`) | `npm test` + `npm run lint` + `npm run build` | Apply 006; wire Azure deploy; Phase 2 operator console |
 | 2026-07-23 | Phase E / B2–B4+B7+E1–E2+G1 | SHA-256 on upload + PDF hash manifest; signed-URL download + image previews (demo stub); retention purge cron; overdue `notified_at` dedupe; owner/admin gates on settings/billing/clients/onboarding/Stripe; member invite send/remove; vitest crosswalk/coverage | `npm test` + `npm run lint` + `npm run build` green | Apply migration 005; Entra + `SUPABASE_SERVICE_ROLE_KEY` for live invites; G2/G3 CI |
 | 2026-07-22 | setup | Seeded `BACKLOG.md` + `ITERATION_LOG.md` from continuous-improvement plan | n/a | Run iteration 1: A1 + A2 |
 | 2026-07-22 | A1 + A2 | Fail-closed Stripe webhook (require `STRIPE_WEBHOOK_SECRET` + signature) and cron auth (require `CRON_SECRET` in non-demo; demo still enforces when set) | `npm run build` + `npm run lint` green | Next: A3 demo IDOR |

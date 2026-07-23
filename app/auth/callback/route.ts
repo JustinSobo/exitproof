@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getAppUrl } from "@/lib/env";
-import { ensureOrgMembershipAfterAuth } from "@/lib/org-bootstrap";
+import {
+  ensureOrgMembershipAfterAuth,
+  entraTenantIdFromUserMetadata,
+} from "@/lib/org-bootstrap";
 import { createClient } from "@/lib/supabase/server";
 
 function fullNameFromUser(user: {
@@ -40,10 +43,15 @@ export async function GET(request: NextRequest) {
       } = await supabase.auth.getUser();
 
       if (user?.email) {
+        const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+        const appMeta = (user.app_metadata ?? {}) as Record<string, unknown>;
         await ensureOrgMembershipAfterAuth({
           userId: user.id,
           email: user.email,
           fullName: fullNameFromUser(user),
+          entraTenantId:
+            entraTenantIdFromUserMetadata(meta) ??
+            entraTenantIdFromUserMetadata(appMeta),
         });
 
         // Gate incomplete orgs to onboarding (unless already headed there).

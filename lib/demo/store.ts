@@ -78,6 +78,7 @@ function seedDemoIfNeeded(state: DemoState) {
 
   const org: Organization = {
     id: "demo-org-1",
+    tenant_id: "demo-org-1",
     name: "Northwind IT",
     stack_profile: "hybrid",
     plan: "trial",
@@ -222,8 +223,10 @@ export const demoStore = {
     state.users.push(user);
     state.passwords[email] = password;
 
+    const orgId = randomUUID();
     const org: Organization = {
-      id: randomUUID(),
+      id: orgId,
+      tenant_id: orgId,
       name: orgName || `${fullName}'s Organization`,
       stack_profile: "m365",
       plan: "trial",
@@ -272,8 +275,10 @@ export const demoStore = {
       user = { id: randomUUID(), email, full_name: email.split("@")[0] };
       state.users.push(user);
       state.passwords[email] = "magic";
+      const orgId = randomUUID();
       const org: Organization = {
-        id: randomUUID(),
+        id: orgId,
+        tenant_id: orgId,
         name: `${user.full_name}'s Organization`,
         stack_profile: "m365",
         plan: "trial",
@@ -374,8 +379,10 @@ export const demoStore = {
     if (clients.length >= PLANS.agency.maxClientOrgs) {
       throw new Error("Agency plan allows up to 25 client organizations.");
     }
+    const orgId = randomUUID();
     const org: Organization = {
-      id: randomUUID(),
+      id: orgId,
+      tenant_id: orgId,
       name,
       stack_profile: stack,
       plan: parent.plan,

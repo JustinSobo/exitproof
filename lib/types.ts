@@ -11,6 +11,12 @@ export type ChecklistItemStatus = "pending" | "done" | "skipped" | "blocked";
 export interface Organization {
   id: string;
   name: string;
+  /**
+   * Immutable tenant isolation key (Phase 1). Defaults to `id` when backfilled.
+   * ALWAYS resolve from session (getCurrentOrg), never from client body alone.
+   * @see lib/tenancy.ts
+   */
+  tenant_id?: string;
   stack_profile: StackProfile;
   plan: PlanId;
   stripe_customer_id: string | null;
@@ -23,6 +29,7 @@ export interface Organization {
   created_at: string;
   /** Framework slugs the org targets (FedRAMP, CMMC, SOC 2, …). */
   selected_frameworks?: string[];
+  /** Customer Entra directory ID — required under GRIDLOGIC_MANAGED. */
   entra_tenant_id?: string | null;
   onboarding_completed_at?: string | null;
 }

@@ -5,9 +5,11 @@ import {
 } from "@/lib/auth/roles";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
+import { tenantIdOf } from "@/lib/tenancy";
 import type { Organization, OrgMember, SessionUser } from "@/lib/types";
 
 export { isOrgAdminRole, ORG_ADMIN_REQUIRED_MESSAGE } from "@/lib/auth/roles";
+export { tenantIdOf, assertSessionTenant } from "@/lib/tenancy";
 
 export const DEMO_SESSION_COOKIE = "ep_demo_session";
 
@@ -70,10 +72,17 @@ export async function getCurrentOrg(): Promise<{
   };
 }
 
-/** Fill Phase A columns when reading orgs created before migration 005. */
+/** Fill Phase A/1 columns when reading orgs created before migrations 005/006. */
 export function normalizeOrganization(raw: Record<string, unknown>): Organization {
+  const id = String(raw.id ?? "");
+  const tenantId =
+    typeof raw.tenant_id === "string" && raw.tenant_id
+      ? raw.tenant_id
+      : id;
   return {
     ...(raw as unknown as Organization),
+    id,
+    tenant_id: tenantId,
     selected_frameworks: Array.isArray(raw.selected_frameworks)
       ? (raw.selected_frameworks as string[])
       : [],
@@ -81,6 +90,11 @@ export function normalizeOrganization(raw: Record<string, unknown>): Organizatio
     onboarding_completed_at:
       (raw.onboarding_completed_at as string | null) ?? null,
   };
+}
+
+/** Session-scoped tenant_id — never accept this from client body alone. */
+export function sessionTenantId(org: Organization): string {
+  return tenantIdOf(org);
 }
 
 export async function requireOrg() {

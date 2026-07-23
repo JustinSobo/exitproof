@@ -1,4 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  isDomainJitAllowed,
+  isGridLogicManaged,
+} from "@/lib/env";
 
 /** Domains that must never JIT-join an org (personal inboxes). */
 const CONSUMER_EMAIL_DOMAINS = new Set([
@@ -42,14 +46,35 @@ function orgNameForBootstrap(email: string, fullName: string | null): string {
 }
 
 /**
+ * Extract customer Entra directory (tenant) ID from OAuth claims / user metadata.
+ * Supabase Azure provider may surface this as `custom_claims.tid` or `tid`.
+ */
+export function entraTenantIdFromUserMetadata(
+  metadata: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!metadata) return null;
+  const direct = metadata.tid ?? metadata.tenant_id;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+
+  const claims = metadata.custom_claims;
+  if (claims && typeof claims === "object" && !Array.isArray(claims)) {
+    const tid = (claims as Record<string, unknown>).tid;
+    if (typeof tid === "string" && tid.trim()) return tid.trim();
+  }
+  return null;
+}
+
+/**
  * After OAuth / magic-link session exchange: if the user has no membership,
- * JIT-join the single org that already has members on the same work domain,
- * otherwise bootstrap a new trial org as owner.
+ * resolve org via Entra tenant bind (GridLogic), optional domain JIT (legacy),
+ * or bootstrap a new trial org (self-serve only — refused when GRIDLOGIC_MANAGED).
  */
 export async function ensureOrgMembershipAfterAuth(params: {
   userId: string;
   email: string;
   fullName: string | null;
+  /** Entra directory ID from IdP token (required path under GridLogic). */
+  entraTenantId?: string | null;
 }): Promise<"existing" | "joined" | "created"> {
   const email = params.email.trim().toLowerCase();
   if (!email) {
@@ -68,8 +93,57 @@ export async function ensureOrgMembershipAfterAuth(params: {
 
   if (existing) return "existing";
 
+  const entraTenantId = params.entraTenantId?.trim() || null;
+
+  // GridLogic / Entra-bound path: join the single org provisioned for this Entra tenant.
+  if (entraTenantId && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const admin = createAdminClient();
+      const { data: orgs, error } = await admin
+        .from("organizations")
+        .select("id, entra_tenant_id, tenant_id")
+        .eq("entra_tenant_id", entraTenantId)
+        .limit(2);
+
+      if (!error && orgs && orgs.length === 1) {
+        const { error: joinError } = await admin
+          .from("organization_members")
+          .insert({
+            org_id: orgs[0].id,
+            user_id: params.userId,
+            role: "member",
+            email,
+            full_name: params.fullName,
+          });
+        if (!joinError) return "joined";
+        const { data: raced } = await supabase
+          .from("organization_members")
+          .select("id")
+          .eq("user_id", params.userId)
+          .limit(1)
+          .maybeSingle();
+        if (raced) return "joined";
+      }
+    } catch (err) {
+      console.error("Entra tenant join failed", err);
+    }
+  }
+
+  if (isGridLogicManaged()) {
+    if (!entraTenantId) {
+      throw new Error(
+        "GridLogic mode requires an Entra tenant ID on the sign-in token. This workspace must be provisioned by GridLogic with entra_tenant_id bound — self-serve org bootstrap is disabled.",
+      );
+    }
+    throw new Error(
+      "No ExitProof tenant is provisioned for your Entra directory. Ask GridLogic to run provision-customer and bind entra_tenant_id before signing in.",
+    );
+  }
+
+  // Legacy domain JIT — OFF by default; enable with ALLOW_DOMAIN_JIT=true only.
   const domain = emailDomain(email);
   if (
+    isDomainJitAllowed() &&
     domain &&
     !isConsumerEmailDomain(domain) &&
     process.env.SUPABASE_SERVICE_ROLE_KEY

@@ -52,6 +52,15 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 - [x] **E2** Member invite send/remove (demo + live Supabase `inviteUserByEmail`) in settings
 - [ ] **E3** Org switcher (multi-membership; `getCurrentOrg` takes first membership only)
 - [ ] **E4** Manager read-only case status link (tokenized share)
+- [x] **E5** Phase 1 tenancy spine: immutable `tenant_id` (migration 006), domain JIT off by default / GridLogic Entra bind, DEMO_MODE prod footgun, provision CLI dry-run, Azure Bicep stubs (`infra/`)
+
+## Pillar H — GridLogic / Azure charter (score 4–5)
+
+- [x] **H1** Phase 1 foundation: IaC stubs, tenant_id, kill silent domain JIT, provision checklist CLI, DEMO_MODE harden (this iteration)
+- [ ] **H2** Phase 2: GridLogic operator console, JIT staff access, onboard wizard, audited org switcher
+- [ ] **H3** Phase 3: Graph read-only connector + consent
+- [ ] **H4** Phase 4: Hybrid AD connector
+- [ ] **H5** Live Azure deploy (Container Apps + SQL + Blob + KV) beyond Bicep stubs
 
 ## Pillar F — UX/UI (score 1)
 
