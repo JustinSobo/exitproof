@@ -164,14 +164,14 @@ function main(): void {
         step: 5,
         title: "Break-glass + owner invite",
         detail:
-          "Create time-boxed GridLogic JIT admin (Phase 2) + invite customer owner",
-        status: "pending_phase2",
+          "Use /operator/onboard (SSO + frameworks + owner invite) and /operator JIT grants (ticket_id + expiry). Migration 008.",
+        status: "ready_phase2",
       },
       {
         step: 6,
         title: "Onboarding checklist",
         detail:
-          "Emit: Graph app consent (Phase 3), optional Hybrid Connector (Phase 4), SSO enforce",
+          "Emit: Graph app consent (Phase 3), optional Hybrid Connector (Phase 4); SSO enforce flag set in operator wizard",
         status: "pending_later_phase",
       },
     ],
@@ -186,7 +186,7 @@ function main(): void {
   console.log(`Blob prefix:      ${blobPrefix}`);
   console.log(`Bicep module:     ${bicepModule}`);
   console.log(
-    "\nDry-run complete. Apply migration 006, then wire Azure deploy + DB insert in a later phase.",
+    "\nDry-run complete. Apply migrations 006–008, use /operator for onboard + JIT, then wire Azure deploy (H5).",
   );
 }
 

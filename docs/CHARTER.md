@@ -181,7 +181,7 @@ Horizon: **~6–9 months** calendar for full charter if one focused team. Each p
 |-------|--------|-------------------------|
 | **0** | Threat model, SKUs, DPA notes, ADRs, this charter | Signed threat model + SKU sheet + architecture ADR |
 | **1** | Azure spine + hard `tenant_id` isolation; kill domain JIT | Two synthetic tenants cannot read each other’s data |
-| **2** | GridLogic operator console, JIT staff access, onboard wizard | Onboard Standard customer in &lt;1 hour without SQL |
+| **2** | GridLogic operator console, JIT staff access, onboard wizard | Onboard Standard customer in &lt;1 hour without SQL — **shipped** (`/operator`, migration `008_operator_jit`) |
 | **3** | Entra multi-tenant app + Graph RO snapshots / mismatch UI | Lab: consent → snapshot → hashed evidence |
 | **4** | Hybrid AD connector (outbound mTLS) | Lab AD detect + pack includes AD export |
 | **5** | Auto-evidence policies & Evidence Pack v3 | System vs human evidence; attest-on-critical |
@@ -233,7 +233,7 @@ Commercial ops: PSA/CRM ticket templates, SOW language, RACI (GridLogic vs custo
 
 **Keep / port:** templates, compliance crosswalk (`lib/compliance/`), case/evidence UX, PDF packs, Stripe or replace with GridLogic billing later.
 
-**Replace / redesign:** Supabase Auth → Entra-centric sessions; Supabase RLS → Azure SQL tenancy; Vercel crons → Azure Jobs; Agency model → GridLogic operator + customer tenants; org-bootstrap domain JIT → explicit provision + Entra tenant bind.
+**Replace / redesign:** Supabase Auth → Entra-centric sessions; Supabase RLS → Azure SQL tenancy; Vercel crons → Azure Jobs; Agency-as-security-boundary → GridLogic operator + customer tenants (Agency plan remains a legacy commercial option); org-bootstrap domain JIT → explicit provision + Entra tenant bind.
 
 **Repo strategy:** Continue in `exitproof` with this charter + ADRs; optional monorepo later (`apps/web`, `apps/worker`, `apps/connector`).
 

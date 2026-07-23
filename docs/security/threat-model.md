@@ -87,7 +87,7 @@ Actors:
 | Threat | Impact | Mitigations |
 |--------|--------|-------------|
 | Cross-tenant evidence/case leak | Critical | Hard isolation (ADR-001); ban global service-role evidence reads; synthetic-tenant pen tests |
-| Agency parent sees child without consent | Critical | Retire Agency-as-security-boundary (Phase 2); explicit consent model if reseller returns |
+| Agency parent sees child without consent | Critical | Soft-retired as security boundary (Phase 2): GridLogic `/operator` + JIT is source of truth; Agency plan still works commercially |
 | Logs contain Graph payloads / tokens | Restricted data leak | Structured logs with `tenant_id` only; redact PII; never log tokens |
 | Public blob URLs | Evidence leak | No public containers; user-delegation / SAS scoped to tenant + short TTL |
 | Over-broad Graph scopes | Excess directory access | RO least privilege (ADR-002); no write until Phase 7 |

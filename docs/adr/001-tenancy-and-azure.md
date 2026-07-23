@@ -87,7 +87,7 @@ VMs may exist only as optional jump hosts or connector build agents—not the pr
 ### Negative / follow-ups
 
 - Phase 1 migration cost off Supabase Auth, RLS, Storage, and Vercel crons
-- Must kill domain JIT and redesign Agency-as-security-boundary (Phase 1–2)
+- Must kill domain JIT and redesign Agency-as-security-boundary (Phase 1–2) — Phase 2 soft-retired Agency as security boundary; `/operator` + JIT is source of truth while Agency plan remains commercially available
 - Dual-run period may temporarily increase complexity
 - Dedicated SKU increases Azure cost and provisioning complexity (acceptable for premium)
 
