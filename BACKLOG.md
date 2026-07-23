@@ -68,3 +68,4 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 - [ ] **G2** Integration: export/cron auth, Stripe fixture round-trip
 - [ ] **G3** GitHub Actions: lint + typecheck + test + build on PR
 - [ ] **G4** Cleanup: unused `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, default Next SVGs, empty component dirs; wire `zod`
+- [ ] **G5** Hide marketing “Try demo” CTAs when `isDemoMode()` is false (action already guarded by D5)
