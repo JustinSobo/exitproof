@@ -24,13 +24,13 @@ export async function GET(
   let rows: Array<Record<string, string>> = [];
 
   if (isDemoMode()) {
-    const c = demoStore.getCase(caseId);
+    const c = demoStore.getCase(caseId, ctx.org.id);
     if (!c) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
     employee = c.employee_name;
-    const evidence = demoStore.getEvidence(caseId);
-    rows = demoStore.getItems(caseId).map((item) => ({
+    const evidence = demoStore.getEvidence(caseId, ctx.org.id);
+    rows = demoStore.getItems(caseId, ctx.org.id).map((item) => ({
       employee_name: c.employee_name,
       employee_email: c.employee_email,
       status_case: c.status,
@@ -55,10 +55,23 @@ export async function GET(
       .from("offboarding_cases")
       .select("*")
       .eq("id", caseId)
-      .single();
+      .maybeSingle();
     if (!c) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+
+    if (c.org_id !== ctx.org.id) {
+      const { data: child } = await supabase
+        .from("organizations")
+        .select("id")
+        .eq("id", c.org_id)
+        .eq("parent_org_id", ctx.org.id)
+        .maybeSingle();
+      if (!child) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
+    }
+
     employee = c.employee_name;
     const { data: items } = await supabase
       .from("checklist_items")

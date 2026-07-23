@@ -24,8 +24,18 @@ export async function POST(request: Request) {
     const path = `demo/${ctx.org.id}/${itemId}/${Date.now()}-${safeName}`;
     // Store path only — content not persisted in demo memory
     void bytes;
-    const evidence = demoStore.addEvidence(itemId, safeName, path, ctx.user);
-    return NextResponse.json({ evidence });
+    try {
+      const evidence = demoStore.addEvidence(
+        itemId,
+        safeName,
+        path,
+        ctx.user,
+        ctx.org.id,
+      );
+      return NextResponse.json({ evidence });
+    } catch {
+      return NextResponse.json({ error: "Item not found" }, { status: 404 });
+    }
   }
 
   const { createClient } = await import("@/lib/supabase/server");

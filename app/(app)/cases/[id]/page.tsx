@@ -16,14 +16,14 @@ export default async function CasePage({
   const { id } = await params;
 
   if (isDemoMode()) {
-    const offboardingCase = demoStore.getCase(id);
+    const offboardingCase = demoStore.getCase(id, ctx.org.id);
     if (!offboardingCase) notFound();
     return (
       <CaseDetailClient
         offboardingCase={offboardingCase}
-        items={demoStore.getItems(id)}
-        evidence={demoStore.getEvidence(id)}
-        audits={demoStore.getAudits(id)}
+        items={demoStore.getItems(id, ctx.org.id)}
+        evidence={demoStore.getEvidence(id, ctx.org.id)}
+        audits={demoStore.getAudits(id, ctx.org.id)}
       />
     );
   }
@@ -34,8 +34,18 @@ export default async function CasePage({
     .from("offboarding_cases")
     .select("*")
     .eq("id", id)
-    .single();
+    .maybeSingle();
   if (!offboardingCase) notFound();
+
+  if (offboardingCase.org_id !== ctx.org.id) {
+    const { data: child } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("id", offboardingCase.org_id)
+      .eq("parent_org_id", ctx.org.id)
+      .maybeSingle();
+    if (!child) notFound();
+  }
 
   const [{ data: items }, { data: evidence }, { data: audits }] =
     await Promise.all([

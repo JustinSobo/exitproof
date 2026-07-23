@@ -162,7 +162,33 @@ function appendAudit(
   });
 }
 
+/** Session org + agency child orgs — mirrors live `user_org_ids()`. */
+function accessibleOrgIds(state: DemoState, sessionOrgId: string): Set<string> {
+  const childIds = state.orgs
+    .filter((o) => o.parent_org_id === sessionOrgId)
+    .map((o) => o.id);
+  return new Set([sessionOrgId, ...childIds]);
+}
+
+function caseInScope(
+  state: DemoState,
+  caseId: string,
+  sessionOrgId: string,
+): OffboardingCase | null {
+  const c = state.cases.find((x) => x.id === caseId) ?? null;
+  if (!c) return null;
+  if (!accessibleOrgIds(state, sessionOrgId).has(c.org_id)) return null;
+  return c;
+}
+
 export const demoStore = {
+  accessibleOrgIds(sessionOrgId: string): Set<string> {
+    return accessibleOrgIds(getState(), sessionOrgId);
+  },
+
+  isOrgAccessible(sessionOrgId: string, targetOrgId: string): boolean {
+    return accessibleOrgIds(getState(), sessionOrgId).has(targetOrgId);
+  },
   listTemplates() {
     return getSeedTemplates();
   },
@@ -326,37 +352,43 @@ export const demoStore = {
 
   listCases(orgId: string): OffboardingCase[] {
     const state = getState();
-    const childIds = state.orgs
-      .filter((o) => o.parent_org_id === orgId)
-      .map((o) => o.id);
-    const ids = new Set([orgId, ...childIds]);
+    const ids = accessibleOrgIds(state, orgId);
     return state.cases
       .filter((c) => ids.has(c.org_id))
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
   },
 
-  getCase(caseId: string): OffboardingCase | null {
-    return getState().cases.find((c) => c.id === caseId) ?? null;
+  getCase(caseId: string, sessionOrgId: string): OffboardingCase | null {
+    return caseInScope(getState(), caseId, sessionOrgId);
   },
 
-  getItems(caseId: string): ChecklistItem[] {
-    return getState()
-      .items.filter((i) => i.case_id === caseId)
+  getItems(caseId: string, sessionOrgId: string): ChecklistItem[] {
+    const state = getState();
+    if (!caseInScope(state, caseId, sessionOrgId)) return [];
+    return state.items
+      .filter((i) => i.case_id === caseId)
       .sort((a, b) => a.sort_order - b.sort_order);
   },
 
-  getEvidence(caseId: string): EvidenceFile[] {
-    return getState().evidence.filter((e) => e.case_id === caseId);
+  getEvidence(caseId: string, sessionOrgId: string): EvidenceFile[] {
+    const state = getState();
+    if (!caseInScope(state, caseId, sessionOrgId)) return [];
+    return state.evidence.filter((e) => e.case_id === caseId);
   },
 
-  getAudits(caseId: string): AuditEvent[] {
-    return getState()
-      .audits.filter((a) => a.case_id === caseId)
+  getAudits(caseId: string, sessionOrgId: string): AuditEvent[] {
+    const state = getState();
+    if (!caseInScope(state, caseId, sessionOrgId)) return [];
+    return state.audits
+      .filter((a) => a.case_id === caseId)
       .sort((a, b) => a.created_at.localeCompare(b.created_at));
   },
 
   createCase(input: {
-    orgId: string;
+    /** Caller's current org — never trust client-supplied org alone. */
+    sessionOrgId: string;
+    /** Target org for the case; must be session org or an agency child. */
+    orgId?: string;
     user: SessionUser;
     employeeName: string;
     employeeEmail: string;
@@ -366,7 +398,11 @@ export const demoStore = {
     notes?: string;
   }) {
     const state = getState();
-    const org = state.orgs.find((o) => o.id === input.orgId);
+    const targetOrgId = input.orgId || input.sessionOrgId;
+    if (!accessibleOrgIds(state, input.sessionOrgId).has(targetOrgId)) {
+      throw new Error("Organization not found");
+    }
+    const org = state.orgs.find((o) => o.id === targetOrgId);
     if (!org) throw new Error("Organization not found");
     const normalized = normalizeMonthlyUsage(org);
     Object.assign(org, normalized);
@@ -437,9 +473,10 @@ export const demoStore = {
     caseId: string,
     status: CaseStatus,
     user: SessionUser,
+    sessionOrgId: string,
   ) {
     const state = getState();
-    const c = state.cases.find((x) => x.id === caseId);
+    const c = caseInScope(state, caseId, sessionOrgId);
     if (!c) throw new Error("Case not found");
     c.status = status;
     if (status === "closed") c.closed_at = new Date().toISOString();
@@ -462,11 +499,12 @@ export const demoStore = {
       ticket_url?: string;
     },
     user: SessionUser,
+    sessionOrgId: string,
   ) {
     const state = getState();
     const item = state.items.find((i) => i.id === itemId);
     if (!item) throw new Error("Checklist item not found");
-    const c = state.cases.find((x) => x.id === item.case_id);
+    const c = caseInScope(state, item.case_id, sessionOrgId);
     if (!c) throw new Error("Case not found");
 
     if (patch.status) {
@@ -501,11 +539,12 @@ export const demoStore = {
     fileName: string,
     storagePath: string,
     user: SessionUser,
+    sessionOrgId: string,
   ) {
     const state = getState();
     const item = state.items.find((i) => i.id === itemId);
     if (!item) throw new Error("Checklist item not found");
-    const c = state.cases.find((x) => x.id === item.case_id);
+    const c = caseInScope(state, item.case_id, sessionOrgId);
     if (!c) throw new Error("Case not found");
 
     const evidence: EvidenceFile = {

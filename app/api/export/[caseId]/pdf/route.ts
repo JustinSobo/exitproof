@@ -45,14 +45,14 @@ export async function GET(
 
 async function loadPack(caseId: string, org: Organization) {
   if (isDemoMode()) {
-    const offboardingCase = demoStore.getCase(caseId);
+    const offboardingCase = demoStore.getCase(caseId, org.id);
     if (!offboardingCase) return null;
     return {
       org,
       offboardingCase,
-      items: demoStore.getItems(caseId),
-      evidence: demoStore.getEvidence(caseId),
-      audits: demoStore.getAudits(caseId),
+      items: demoStore.getItems(caseId, org.id),
+      evidence: demoStore.getEvidence(caseId, org.id),
+      audits: demoStore.getAudits(caseId, org.id),
     };
   }
 
@@ -62,8 +62,20 @@ async function loadPack(caseId: string, org: Organization) {
     .from("offboarding_cases")
     .select("*")
     .eq("id", caseId)
-    .single();
+    .maybeSingle();
   if (!offboardingCase) return null;
+
+  // Defense in depth beyond RLS: case must belong to session org or a child.
+  const caseOrgId = offboardingCase.org_id as string;
+  if (caseOrgId !== org.id) {
+    const { data: child } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("id", caseOrgId)
+      .eq("parent_org_id", org.id)
+      .maybeSingle();
+    if (!child) return null;
+  }
 
   const [{ data: items }, { data: evidence }, { data: audits }] =
     await Promise.all([

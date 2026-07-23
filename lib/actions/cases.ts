@@ -16,7 +16,7 @@ export async function createCaseAction(formData: FormData): Promise<void> {
   const assigneeEmail = String(formData.get("assignee_email") || "").trim();
   const dueDate = String(formData.get("due_date") || "") || undefined;
   const notes = String(formData.get("notes") || "") || undefined;
-  const orgId = String(formData.get("org_id") || ctx.org.id);
+  const requestedOrgId = String(formData.get("org_id") || "").trim();
 
   if (!employeeName || !employeeEmail) {
     redirect(
@@ -28,7 +28,8 @@ export async function createCaseAction(formData: FormData): Promise<void> {
     let created;
     try {
       created = demoStore.createCase({
-        orgId,
+        sessionOrgId: ctx.org.id,
+        orgId: requestedOrgId || ctx.org.id,
         user: ctx.user,
         employeeName,
         employeeEmail,
@@ -47,6 +48,24 @@ export async function createCaseAction(formData: FormData): Promise<void> {
 
   const { createClient } = await import("@/lib/supabase/server");
   const supabase = await createClient();
+
+  // org_id from client must be current org or an agency child — never arbitrary.
+  let orgId = ctx.org.id;
+  if (requestedOrgId && requestedOrgId !== ctx.org.id) {
+    const { data: child } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("id", requestedOrgId)
+      .eq("parent_org_id", ctx.org.id)
+      .maybeSingle();
+    if (!child) {
+      redirect(
+        `/cases/new?error=${encodeURIComponent("Organization not found")}`,
+      );
+    }
+    orgId = child.id;
+  }
+
   const template =
     getTemplateById(templateId) ??
     defaultTemplateForStack(ctx.org.stack_profile);
@@ -125,13 +144,25 @@ export async function updateCaseStatusAction(
   const ctx = await requireOrg();
 
   if (isDemoMode()) {
-    demoStore.updateCaseStatus(caseId, status, ctx.user);
+    try {
+      demoStore.updateCaseStatus(caseId, status, ctx.user, ctx.org.id);
+    } catch {
+      return { error: "Case not found" };
+    }
     revalidatePath(`/cases/${caseId}`);
     return { ok: true };
   }
 
   const { createClient } = await import("@/lib/supabase/server");
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("offboarding_cases")
+    .select("id, org_id")
+    .eq("id", caseId)
+    .maybeSingle();
+  if (!existing) return { error: "Case not found" };
+
   const patch: Record<string, unknown> = { status };
   if (status === "closed") patch.closed_at = new Date().toISOString();
 
@@ -142,7 +173,7 @@ export async function updateCaseStatusAction(
   if (error) return { error: error.message };
 
   await supabase.from("audit_events").insert({
-    org_id: ctx.org.id,
+    org_id: existing.org_id,
     case_id: caseId,
     actor_id: ctx.user.id,
     actor_email: ctx.user.email,
@@ -165,7 +196,11 @@ export async function updateChecklistAction(
   const ctx = await requireOrg();
 
   if (isDemoMode()) {
-    demoStore.updateChecklistItem(itemId, patch, ctx.user);
+    try {
+      demoStore.updateChecklistItem(itemId, patch, ctx.user, ctx.org.id);
+    } catch {
+      return { error: "Checklist item not found" };
+    }
     revalidatePath("/cases");
     return { ok: true };
   }
