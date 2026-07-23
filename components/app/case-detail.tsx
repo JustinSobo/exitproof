@@ -39,22 +39,42 @@ export function CaseDetailClient({
   }
 
   async function onStatusChange(next: CaseStatus) {
+    const previous = status;
     setStatus(next);
     startTransition(async () => {
-      await updateCaseStatusAction(offboardingCase.id, next);
+      const result = await updateCaseStatusAction(offboardingCase.id, next);
+      if (result?.error) {
+        setStatus(previous);
+        setMessage(result.error);
+        return;
+      }
+      setMessage(null);
       refresh();
     });
   }
 
   async function markDone(item: ChecklistItem) {
     const nextStatus = item.status === "done" ? "pending" : "done";
+    const previous = item.status;
     setItems((prev) =>
       prev.map((i) =>
         i.id === item.id ? { ...i, status: nextStatus } : i,
       ),
     );
     startTransition(async () => {
-      await updateChecklistAction(item.id, { status: nextStatus });
+      const result = await updateChecklistAction(item.id, {
+        status: nextStatus,
+      });
+      if (result?.error) {
+        setItems((prev) =>
+          prev.map((i) =>
+            i.id === item.id ? { ...i, status: previous } : i,
+          ),
+        );
+        setMessage(result.error);
+        return;
+      }
+      setMessage(null);
       refresh();
     });
   }

@@ -146,14 +146,15 @@ export async function updateCaseStatusAction(
   if (isDemoMode()) {
     try {
       demoStore.updateCaseStatus(caseId, status, ctx.user, ctx.org.id);
-    } catch {
-      return { error: "Case not found" };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Case not found" };
     }
     revalidatePath(`/cases/${caseId}`);
     return { ok: true };
   }
 
   const { createClient } = await import("@/lib/supabase/server");
+  const { assertCanCloseCase } = await import("@/lib/cases/evidence-rules");
   const supabase = await createClient();
 
   const { data: existing } = await supabase
@@ -162,6 +163,18 @@ export async function updateCaseStatusAction(
     .eq("id", caseId)
     .maybeSingle();
   if (!existing) return { error: "Case not found" };
+
+  if (status === "closed") {
+    const { data: items } = await supabase
+      .from("checklist_items")
+      .select("is_critical, status, title")
+      .eq("case_id", caseId);
+    try {
+      assertCanCloseCase(items ?? []);
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Cannot close case" };
+    }
+  }
 
   const patch: Record<string, unknown> = { status };
   if (status === "closed") patch.closed_at = new Date().toISOString();
@@ -198,15 +211,39 @@ export async function updateChecklistAction(
   if (isDemoMode()) {
     try {
       demoStore.updateChecklistItem(itemId, patch, ctx.user, ctx.org.id);
-    } catch {
-      return { error: "Checklist item not found" };
+    } catch (e) {
+      return {
+        error: e instanceof Error ? e.message : "Checklist item not found",
+      };
     }
     revalidatePath("/cases");
     return { ok: true };
   }
 
   const { createClient } = await import("@/lib/supabase/server");
+  const { assertCanCompleteItem } = await import("@/lib/cases/evidence-rules");
   const supabase = await createClient();
+
+  const { data: current, error: loadError } = await supabase
+    .from("checklist_items")
+    .select("*")
+    .eq("id", itemId)
+    .maybeSingle();
+  if (loadError || !current) return { error: "Checklist item not found" };
+
+  if (patch.status === "done") {
+    const { data: evidence } = await supabase
+      .from("evidence_files")
+      .select("checklist_item_id")
+      .eq("case_id", current.case_id);
+    try {
+      assertCanCompleteItem(current, evidence ?? [], patch.ticket_url);
+    } catch (e) {
+      return {
+        error: e instanceof Error ? e.message : "Evidence required",
+      };
+    }
+  }
 
   const update: Record<string, unknown> = { ...patch };
   if (patch.status === "done") {

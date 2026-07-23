@@ -17,7 +17,7 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 
 ## Pillar B — Compliance standards depth (score 3–4)
 
-- [ ] **B1** Enforce `requires_evidence` server-side: critical steps can't complete without evidence/ticket URL; cases can't close with open critical steps
+- [x] **B1** Enforce `requires_evidence` server-side: critical steps can't complete without evidence/ticket URL; cases can't close with open critical steps
 - [ ] **B2** Signed-URL evidence download + image thumbnails in case detail
 - [ ] **B3** SHA-256 hash per evidence file stored on `evidence_files`; embed images + hash manifest in PDF pack (`lib/pdf/evidence-pack.tsx`)
 - [ ] **B4** Retention enforcement: purge job honoring plan `retention_days`, audit event on purge

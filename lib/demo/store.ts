@@ -1,6 +1,10 @@
 import { randomUUID } from "crypto";
 import { canCreateClientOrg, canCreateOffboard, normalizeMonthlyUsage } from "@/lib/billing/gates";
 import { PLANS } from "@/lib/billing/plans";
+import {
+  assertCanCloseCase,
+  assertCanCompleteItem,
+} from "@/lib/cases/evidence-rules";
 import { defaultTemplateForStack, getSeedTemplates, getTemplateById } from "@/lib/templates";
 import type {
   AuditEvent,
@@ -478,6 +482,9 @@ export const demoStore = {
     const state = getState();
     const c = caseInScope(state, caseId, sessionOrgId);
     if (!c) throw new Error("Case not found");
+    if (status === "closed") {
+      assertCanCloseCase(state.items.filter((i) => i.case_id === caseId));
+    }
     c.status = status;
     if (status === "closed") c.closed_at = new Date().toISOString();
     appendAudit(state, {
@@ -506,6 +513,14 @@ export const demoStore = {
     if (!item) throw new Error("Checklist item not found");
     const c = caseInScope(state, item.case_id, sessionOrgId);
     if (!c) throw new Error("Case not found");
+
+    if (patch.status === "done") {
+      assertCanCompleteItem(
+        item,
+        state.evidence.filter((e) => e.case_id === c.id),
+        patch.ticket_url,
+      );
+    }
 
     if (patch.status) {
       item.status = patch.status;

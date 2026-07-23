@@ -13,3 +13,4 @@
 | 2026-07-22 | D7 | Surface real login/signup error and success messages from query params | `npm run build` + `npm run lint` green | Next: D2 agency child cases |
 | 2026-07-22 | D2 | Live dashboard/cases list parent + agency child org cases via shared `listCasesForOrg` | `npm run build` + `npm run lint` green | Next: D1 template IDs |
 | 2026-07-22 | D1 | Align TS template IDs with SQL seed UUIDs; live createCaseAction persists `template_id` | `npm run build` + `npm run lint` green | Next: B1 requires_evidence |
+| 2026-07-22 | B1 | Server-side evidence rules: block done without file/ticket when required; block close with open criticals (demo + live) | `npm run build` + `npm run lint` green | Next: D6 webhook plan normalize |
