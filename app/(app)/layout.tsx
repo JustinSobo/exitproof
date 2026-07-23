@@ -1,16 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { OnboardingBanner } from "@/components/app/onboarding-banner";
 import { signOutAction } from "@/lib/actions/auth";
 import { getCurrentOrg } from "@/lib/auth";
 import { isDemoMode } from "@/lib/env";
-import { needsOnboarding } from "@/lib/onboarding/questionnaire";
 
+/** Primary IA — New offboard is a Cases page CTA, not a nav item. */
 const links = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/cases", label: "Cases" },
   { href: "/compliance", label: "Compliance" },
-  { href: "/cases/new", label: "New offboard" },
   { href: "/settings", label: "Settings" },
   { href: "/billing", label: "Billing" },
   { href: "/clients", label: "Clients" },
@@ -23,15 +22,6 @@ export default async function AppLayout({
 }) {
   const ctx = await getCurrentOrg();
   if (!ctx) redirect("/auth/login");
-
-  const headerList = await headers();
-  const pathname = headerList.get("x-pathname") ?? "";
-  const onOnboarding =
-    pathname === "/onboarding" || pathname.startsWith("/onboarding/");
-
-  if (needsOnboarding(ctx.org) && !onOnboarding) {
-    redirect("/onboarding");
-  }
 
   return (
     <div className="ep-atmosphere min-h-screen text-[var(--mist)]">
@@ -70,27 +60,44 @@ export default async function AppLayout({
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center justify-between border-b border-[var(--line)] px-4 py-4 md:px-8">
-            <div className="md:hidden">
-              <Link
-                href="/dashboard"
-                className="font-[family-name:var(--font-syne)] text-lg font-800"
-              >
-                ExitProof
-              </Link>
+          <header className="border-b border-[var(--line)] px-4 py-4 md:px-8">
+            <div className="flex items-center justify-between gap-3">
+              <div className="md:hidden">
+                <Link
+                  href="/dashboard"
+                  className="font-[family-name:var(--font-syne)] text-lg font-800"
+                >
+                  ExitProof
+                </Link>
+              </div>
+              <p className="hidden text-sm text-[var(--fog)] md:block">
+                {ctx.user.email}
+              </p>
+              <form action={signOutAction} className="md:hidden">
+                <button
+                  type="submit"
+                  className="text-xs text-[var(--fog)] hover:text-white"
+                >
+                  Sign out
+                </button>
+              </form>
             </div>
-            <div className="flex flex-wrap gap-2 text-xs md:hidden">
-              {links.slice(0, 4).map((l) => (
-                <Link key={l.href} href={l.href} className="text-[var(--fog)]">
+            <nav className="-mx-1 mt-3 flex gap-1 overflow-x-auto pb-1 text-xs md:hidden">
+              {links.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="shrink-0 rounded-md px-2.5 py-1.5 text-[var(--fog)] hover:bg-white/5 hover:text-white"
+                >
                   {l.label}
                 </Link>
               ))}
-            </div>
-            <p className="hidden text-sm text-[var(--fog)] md:block">
-              {ctx.user.email}
-            </p>
+            </nav>
           </header>
-          <main className="flex-1 px-4 py-6 md:px-8">{children}</main>
+          <main className="flex-1 px-4 py-6 md:px-8">
+            <OnboardingBanner org={ctx.org} />
+            {children}
+          </main>
         </div>
       </div>
     </div>
