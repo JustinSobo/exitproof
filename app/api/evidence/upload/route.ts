@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentOrg } from "@/lib/auth";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
+import { sha256Hex } from "@/lib/evidence/hash";
 import { validateEvidenceUpload, MAX_EVIDENCE_BYTES } from "@/lib/evidence/validate-upload";
 
 export async function POST(request: Request) {
@@ -38,10 +39,10 @@ export async function POST(request: Request) {
   }
 
   const safeName = validated.data.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const contentHash = sha256Hex(bytes);
 
   if (isDemoMode()) {
     const path = `demo/${ctx.org.id}/${validated.data.itemId}/${Date.now()}-${safeName}`;
-    void bytes;
     try {
       const evidence = demoStore.addEvidence(
         validated.data.itemId,
@@ -49,6 +50,11 @@ export async function POST(request: Request) {
         path,
         ctx.user,
         ctx.org.id,
+        {
+          contentHash,
+          mimeType: validated.data.mimeType,
+          byteSize: bytes.byteLength,
+        },
       );
       return NextResponse.json({ evidence });
     } catch {
@@ -91,7 +97,7 @@ export async function POST(request: Request) {
       uploaded_by: ctx.user.email,
       mime_type: validated.data.mimeType,
       byte_size: bytes.byteLength,
-      content_hash: null,
+      content_hash: contentHash,
     })
     .select("*")
     .single();
@@ -111,6 +117,7 @@ export async function POST(request: Request) {
       file_name: safeName,
       mime_type: validated.data.mimeType,
       size: bytes.byteLength,
+      content_hash: contentHash,
     },
   });
 

@@ -6,6 +6,7 @@ import {
   updateCaseStatusAction,
   updateChecklistAction,
 } from "@/lib/actions/cases";
+import { EvidencePreview } from "@/components/app/evidence-preview";
 import { controlChipLabel, resolveControlRefs } from "@/lib/compliance";
 import type {
   AuditEvent,
@@ -260,8 +261,8 @@ export function CaseDetailClient({
               </label>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              <label className="cursor-pointer rounded-md border border-[var(--line)] px-3 py-1.5 hover:bg-white/5">
+            <div className="space-y-3 text-sm">
+              <label className="inline-flex cursor-pointer rounded-md border border-[var(--line)] px-3 py-1.5 hover:bg-white/5">
                 Upload evidence
                 <input
                   type="file"
@@ -274,11 +275,13 @@ export function CaseDetailClient({
                   }}
                 />
               </label>
-              {files.map((f) => (
-                <span key={f.id} className="text-[var(--fog)]">
-                  {f.file_name}
-                </span>
-              ))}
+              {files.length > 0 ? (
+                <div className="flex flex-wrap gap-3">
+                  {files.map((f) => (
+                    <EvidencePreview key={f.id} file={f} />
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}

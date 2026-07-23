@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireOrg } from "@/lib/auth";
+import {
+  ORG_ADMIN_REQUIRED_MESSAGE,
+  requireOrg,
+  requireOrgAdmin,
+} from "@/lib/auth";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
 import { defaultTemplateForStack, getTemplateById, templateStepsForOrg } from "@/lib/templates";
@@ -322,7 +326,14 @@ export async function updateChecklistAction(
 }
 
 export async function updateOrgSettingsAction(formData: FormData): Promise<void> {
-  const ctx = await requireOrg();
+  let ctx;
+  try {
+    ctx = await requireOrgAdmin();
+  } catch (e) {
+    redirect(
+      `/settings?error=${encodeURIComponent(e instanceof Error ? e.message : ORG_ADMIN_REQUIRED_MESSAGE)}`,
+    );
+  }
   const name = String(formData.get("name") || "").trim();
   const stack = String(formData.get("stack_profile") || "hybrid") as StackProfile;
 
@@ -341,12 +352,27 @@ export async function updateOrgSettingsAction(formData: FormData): Promise<void>
   if (error) {
     redirect(`/settings?error=${encodeURIComponent(error.message)}`);
   }
+  await supabase.from("audit_events").insert({
+    org_id: ctx.org.id,
+    case_id: null,
+    actor_id: ctx.user.id,
+    actor_email: ctx.user.email,
+    event_type: "settings.updated",
+    payload: { name, stack_profile: stack },
+  });
   revalidatePath("/settings");
   redirect("/settings?saved=1");
 }
 
 export async function createClientOrgAction(formData: FormData): Promise<void> {
-  const ctx = await requireOrg();
+  let ctx;
+  try {
+    ctx = await requireOrgAdmin();
+  } catch (e) {
+    redirect(
+      `/clients?error=${encodeURIComponent(e instanceof Error ? e.message : ORG_ADMIN_REQUIRED_MESSAGE)}`,
+    );
+  }
   const name = String(formData.get("name") || "").trim();
   const stack = String(formData.get("stack_profile") || "hybrid") as StackProfile;
   if (!name) {

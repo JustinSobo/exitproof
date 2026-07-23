@@ -249,17 +249,17 @@ export function EvidencePackDocument({
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.h2}>Evidence attachments</Text>
+          <Text style={styles.h2}>Evidence hash manifest (SHA-256)</Text>
           {evidence.length === 0 ? (
             <Text style={styles.meta}>No evidence files attached.</Text>
           ) : (
             evidence.map((e) => (
               <Text key={e.id} style={styles.meta}>
                 • {e.file_name}
-                {e.content_hash ? ` · ${e.content_hash}` : ""}
+                {"\n"}  SHA-256: {e.content_hash || "(hash unavailable)"}
                 {e.mime_type ? ` · ${e.mime_type}` : ""}
-                {e.byte_size != null ? ` · ${e.byte_size} B` : ""} — uploaded{" "}
-                {e.created_at} by {e.uploaded_by}
+                {e.byte_size != null ? ` · ${e.byte_size} B` : ""}
+                {"\n"}  uploaded {e.created_at} by {e.uploaded_by}
               </Text>
             ))
           )}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentOrg } from "@/lib/auth";
+import { getCurrentOrg, isOrgAdminRole, ORG_ADMIN_REQUIRED_MESSAGE } from "@/lib/auth";
 import { getStripePriceId } from "@/lib/billing/plans";
 import { demoStore } from "@/lib/demo/store";
 import { getAppUrl, hasStripe, isDemoMode } from "@/lib/env";
@@ -9,6 +9,12 @@ export async function POST(request: Request) {
   const ctx = await getCurrentOrg();
   if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!isOrgAdminRole(ctx.member.role)) {
+    return NextResponse.json(
+      { error: ORG_ADMIN_REQUIRED_MESSAGE },
+      { status: 403 },
+    );
   }
 
   const body = (await request.json()) as { plan?: PlanId };

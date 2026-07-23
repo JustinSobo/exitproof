@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireOrg } from "@/lib/auth";
+import {
+  ORG_ADMIN_REQUIRED_MESSAGE,
+  requireOrgAdmin,
+} from "@/lib/auth";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
 import {
@@ -29,7 +32,14 @@ function readStackAnswers(formData: FormData): StackAnswers {
 export async function completeOnboardingAction(
   formData: FormData,
 ): Promise<void> {
-  const ctx = await requireOrg();
+  let ctx;
+  try {
+    ctx = await requireOrgAdmin();
+  } catch (e) {
+    redirect(
+      `/onboarding?error=${encodeURIComponent(e instanceof Error ? e.message : ORG_ADMIN_REQUIRED_MESSAGE)}`,
+    );
+  }
 
   const frameworks = parseFrameworkSelections(formData.getAll("frameworks"));
   const selected =

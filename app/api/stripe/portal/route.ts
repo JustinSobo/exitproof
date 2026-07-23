@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
-import { getCurrentOrg } from "@/lib/auth";
+import { getCurrentOrg, isOrgAdminRole, ORG_ADMIN_REQUIRED_MESSAGE } from "@/lib/auth";
 import { getAppUrl, hasStripe, isDemoMode } from "@/lib/env";
 
 export async function POST() {
   const ctx = await getCurrentOrg();
   if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!isOrgAdminRole(ctx.member.role)) {
+    return NextResponse.json(
+      { error: ORG_ADMIN_REQUIRED_MESSAGE },
+      { status: 403 },
+    );
   }
 
   if (!hasStripe() || isDemoMode()) {

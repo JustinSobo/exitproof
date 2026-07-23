@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { BillingActions } from "@/components/app/billing-actions";
-import { getCurrentOrg } from "@/lib/auth";
+import { getCurrentOrg, isOrgAdminRole } from "@/lib/auth";
 import { PLANS } from "@/lib/billing/plans";
 import { isDemoMode } from "@/lib/env";
 
@@ -15,6 +15,7 @@ export default async function BillingPage({
   if (!ctx) redirect("/auth/login");
   const params = await searchParams;
   const plan = PLANS[ctx.org.plan];
+  const canManage = isOrgAdminRole(ctx.member.role);
 
   return (
     <div className="space-y-8">
@@ -45,7 +46,14 @@ export default async function BillingPage({
         </p>
       ) : null}
 
-      <BillingActions currentPlan={ctx.org.plan} />
+      {canManage ? (
+        <BillingActions currentPlan={ctx.org.plan} />
+      ) : (
+        <p className="rounded-md border border-[var(--line)] bg-white/[0.03] px-4 py-3 text-sm text-[var(--fog)]">
+          Only organization owners and admins can change billing. Ask an admin
+          if you need a plan upgrade.
+        </p>
+      )}
     </div>
   );
 }

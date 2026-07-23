@@ -600,6 +600,11 @@ export const demoStore = {
     storagePath: string,
     user: SessionUser,
     sessionOrgId: string,
+    meta?: {
+      contentHash?: string | null;
+      mimeType?: string | null;
+      byteSize?: number | null;
+    },
   ) {
     const state = getState();
     const item = state.items.find((i) => i.id === itemId);
@@ -616,9 +621,9 @@ export const demoStore = {
       storage_path: storagePath,
       uploaded_by: user.email,
       created_at: new Date().toISOString(),
-      content_hash: null,
-      mime_type: null,
-      byte_size: null,
+      content_hash: meta?.contentHash ?? null,
+      mime_type: meta?.mimeType ?? null,
+      byte_size: meta?.byteSize ?? null,
     };
     state.evidence.push(evidence);
 
@@ -628,10 +633,47 @@ export const demoStore = {
       actor_id: user.id,
       actor_email: user.email,
       event_type: "evidence.uploaded",
-      payload: { item_id: itemId, file_name: fileName },
+      payload: {
+        item_id: itemId,
+        file_name: fileName,
+        content_hash: evidence.content_hash,
+        mime_type: evidence.mime_type,
+        size: evidence.byte_size,
+      },
     });
 
     return evidence;
+  },
+
+  getEvidenceById(evidenceId: string, sessionOrgId: string): EvidenceFile | null {
+    const state = getState();
+    const evidence = state.evidence.find((e) => e.id === evidenceId);
+    if (!evidence) return null;
+    if (!caseInScope(state, evidence.case_id, sessionOrgId)) return null;
+    return evidence;
+  },
+
+  recordEvidenceDownload(
+    evidenceId: string,
+    user: SessionUser,
+    sessionOrgId: string,
+  ) {
+    const evidence = this.getEvidenceById(evidenceId, sessionOrgId);
+    if (!evidence) return;
+    const state = getState();
+    appendAudit(state, {
+      org_id: evidence.org_id,
+      case_id: evidence.case_id,
+      actor_id: user.id,
+      actor_email: user.email,
+      event_type: "evidence.downloaded",
+      payload: {
+        evidence_id: evidenceId,
+        file_name: evidence.file_name,
+        content_hash: evidence.content_hash,
+        demo: true,
+      },
+    });
   },
 
   setPlan(orgId: string, plan: PlanId, stripeCustomerId?: string, subId?: string) {
@@ -668,11 +710,160 @@ export const demoStore = {
       const org = state.orgs.find((o) => o.id === c.org_id);
       if (!org) continue;
       for (const item of state.items.filter((i) => i.case_id === c.id)) {
-        if (item.is_critical && item.status !== "done") {
+        if (
+          item.is_critical &&
+          item.status !== "done" &&
+          !item.notified_at
+        ) {
           results.push({ case: c, item, org });
         }
       }
     }
     return results;
+  },
+
+  markItemNotified(itemId: string, at = new Date().toISOString()) {
+    const state = getState();
+    const item = state.items.find((i) => i.id === itemId);
+    if (!item) return null;
+    item.notified_at = at;
+    return item;
+  },
+
+  inviteMember(
+    orgId: string,
+    email: string,
+    role: "admin" | "member" = "member",
+  ): OrgMember {
+    const state = getState();
+    const org = state.orgs.find((o) => o.id === orgId);
+    if (!org) throw new Error("Organization not found");
+    const normalized = email.trim().toLowerCase();
+    if (!normalized.includes("@")) throw new Error("Valid email required");
+
+    const existing = state.members.find(
+      (m) => m.org_id === orgId && m.email.toLowerCase() === normalized,
+    );
+    if (existing) throw new Error("That email is already a member");
+
+    let user = state.users.find((u) => u.email.toLowerCase() === normalized);
+    if (!user) {
+      user = {
+        id: randomUUID(),
+        email: normalized,
+        full_name: null,
+      };
+      state.users.push(user);
+      state.passwords[normalized] = "demo1234";
+    }
+
+    const member: OrgMember = {
+      id: randomUUID(),
+      org_id: orgId,
+      user_id: user.id,
+      role,
+      email: normalized,
+      full_name: user.full_name ?? null,
+    };
+    state.members.push(member);
+
+    appendAudit(state, {
+      org_id: orgId,
+      case_id: null,
+      actor_id: null,
+      actor_email: "system",
+      event_type: "member.invited",
+      payload: { email: normalized, role },
+    });
+
+    return member;
+  },
+
+  removeMember(orgId: string, memberId: string, actorUserId: string) {
+    const state = getState();
+    const member = state.members.find(
+      (m) => m.id === memberId && m.org_id === orgId,
+    );
+    if (!member) throw new Error("Member not found");
+    if (member.user_id === actorUserId) {
+      throw new Error("You cannot remove yourself");
+    }
+    if (member.role === "owner") {
+      const owners = state.members.filter(
+        (m) => m.org_id === orgId && m.role === "owner",
+      );
+      if (owners.length <= 1) {
+        throw new Error("Cannot remove the last owner");
+      }
+    }
+
+    state.members = state.members.filter((m) => m.id !== memberId);
+    appendAudit(state, {
+      org_id: orgId,
+      case_id: null,
+      actor_id: actorUserId,
+      actor_email: state.users.find((u) => u.id === actorUserId)?.email ?? null,
+      event_type: "member.removed",
+      payload: { member_id: memberId, email: member.email, role: member.role },
+    });
+  },
+
+  /**
+   * Purge closed cases (and related rows) past the org retention window.
+   * Returns purged case ids for audit/response.
+   */
+  purgeExpiredCases(now = new Date()): Array<{
+    orgId: string;
+    caseId: string;
+    closedAt: string;
+    retentionDays: number;
+  }> {
+    const state = getState();
+    const purged: Array<{
+      orgId: string;
+      caseId: string;
+      closedAt: string;
+      retentionDays: number;
+    }> = [];
+
+    for (const org of state.orgs) {
+      const cutoff = new Date(now);
+      cutoff.setUTCDate(cutoff.getUTCDate() - org.retention_days);
+      const cutoffIso = cutoff.toISOString();
+
+      const expired = state.cases.filter(
+        (c) =>
+          c.org_id === org.id &&
+          c.status === "closed" &&
+          c.closed_at &&
+          c.closed_at < cutoffIso,
+      );
+
+      for (const c of expired) {
+        purged.push({
+          orgId: org.id,
+          caseId: c.id,
+          closedAt: c.closed_at!,
+          retentionDays: org.retention_days,
+        });
+        state.evidence = state.evidence.filter((e) => e.case_id !== c.id);
+        state.items = state.items.filter((i) => i.case_id !== c.id);
+        state.cases = state.cases.filter((x) => x.id !== c.id);
+        appendAudit(state, {
+          org_id: org.id,
+          case_id: null,
+          actor_id: null,
+          actor_email: "system",
+          event_type: "retention.purged",
+          payload: {
+            case_id: c.id,
+            closed_at: c.closed_at,
+            retention_days: org.retention_days,
+          },
+        });
+      }
+    }
+
+    return purged;
   },
 };

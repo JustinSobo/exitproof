@@ -9,6 +9,8 @@ import { sendOverdueEmail } from "@/lib/resend";
  * Secure with CRON_SECRET:
  *   Authorization: Bearer $CRON_SECRET
  *
+ * Dedupes via checklist_items.notified_at (set after each notify attempt).
+ *
  * Vercel Cron example (vercel.json):
  *   { "crons": [{ "path": "/api/cron/overdue", "schedule": "0 14 * * *" }] }
  */
@@ -27,8 +29,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const results: Array<{ caseId: string; step: string; sent: boolean; reason?: string }> =
-    [];
+  const results: Array<{
+    caseId: string;
+    step: string;
+    sent: boolean;
+    reason?: string;
+    skipped?: boolean;
+  }> = [];
 
   if (isDemoMode()) {
     for (const row of demoStore.listOverdueCritical()) {
@@ -40,6 +47,7 @@ export async function GET(request: Request) {
         caseId: row.case.id,
         dueDate: row.case.due_date || "",
       });
+      demoStore.markItemNotified(row.item.id);
       results.push({
         caseId: row.case.id,
         step: row.item.title,
@@ -66,7 +74,8 @@ export async function GET(request: Request) {
       .select("*")
       .eq("case_id", c.id)
       .eq("is_critical", true)
-      .neq("status", "done");
+      .neq("status", "done")
+      .is("notified_at", null);
 
     for (const item of items ?? []) {
       const to = c.assignee_email;
@@ -78,6 +87,10 @@ export async function GET(request: Request) {
         caseId: c.id,
         dueDate: c.due_date,
       });
+      await admin
+        .from("checklist_items")
+        .update({ notified_at: new Date().toISOString() })
+        .eq("id", item.id);
       results.push({
         caseId: c.id,
         step: item.title,

@@ -1,7 +1,13 @@
 import { cookies } from "next/headers";
+import {
+  isOrgAdminRole,
+  ORG_ADMIN_REQUIRED_MESSAGE,
+} from "@/lib/auth/roles";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
 import type { Organization, OrgMember, SessionUser } from "@/lib/types";
+
+export { isOrgAdminRole, ORG_ADMIN_REQUIRED_MESSAGE } from "@/lib/auth/roles";
 
 export const DEMO_SESSION_COOKIE = "ep_demo_session";
 
@@ -81,6 +87,15 @@ export async function requireOrg() {
   const ctx = await getCurrentOrg();
   if (!ctx) {
     throw new Error("Unauthorized");
+  }
+  return ctx;
+}
+
+/** Require owner/admin membership for settings, billing, clients, invites. */
+export async function requireOrgAdmin() {
+  const ctx = await requireOrg();
+  if (!isOrgAdminRole(ctx.member.role)) {
+    throw new Error(ORG_ADMIN_REQUIRED_MESSAGE);
   }
   return ctx;
 }

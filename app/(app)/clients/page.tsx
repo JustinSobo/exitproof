@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { EmptyState } from "@/components/app/empty-state";
 import { createClientOrgAction } from "@/lib/actions/cases";
-import { getCurrentOrg } from "@/lib/auth";
+import { getCurrentOrg, isOrgAdminRole } from "@/lib/auth";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
 
@@ -11,6 +11,8 @@ export const metadata = { title: "Client orgs" };
 export default async function ClientsPage() {
   const ctx = await getCurrentOrg();
   if (!ctx) redirect("/auth/login");
+
+  const canManage = isOrgAdminRole(ctx.member.role);
 
   let clients = [];
   if (isDemoMode()) {
@@ -40,6 +42,12 @@ export default async function ClientsPage() {
         </p>
       </div>
 
+      {!canManage ? (
+        <p className="rounded-md border border-[var(--line)] bg-white/[0.03] px-4 py-3 text-sm text-[var(--fog)]">
+          Only owners and admins can create client organizations.
+        </p>
+      ) : null}
+
       {!isAgency ? (
         <div className="rounded-xl border border-[var(--amber)]/40 bg-[var(--amber)]/10 px-4 py-3 text-sm">
           Upgrade to Agency ($249/mo) to create client organizations.{" "}
@@ -49,7 +57,7 @@ export default async function ClientsPage() {
         </div>
       ) : null}
 
-      {isAgency ? (
+      {isAgency && canManage ? (
         <form action={createClientOrgAction} className="max-w-md space-y-3">
           <label className="block text-sm">
             <span className="text-[var(--fog)]">Client name</span>
@@ -84,11 +92,13 @@ export default async function ClientsPage() {
           title="No client orgs yet"
           body={
             isAgency
-              ? "Add a client tenant to run isolated offboarding cases under your agency parent."
+              ? canManage
+                ? "Add a client tenant to run isolated offboarding cases under your agency parent."
+                : "Ask an owner or admin to add client tenants."
               : "Client orgs are available on the Agency plan for MSPs and multi-tenant IT teams."
           }
-          actionHref={isAgency ? undefined : "/billing"}
-          actionLabel={isAgency ? undefined : "View billing"}
+          actionHref={isAgency || !canManage ? undefined : "/billing"}
+          actionLabel={isAgency || !canManage ? undefined : "View billing"}
         />
       ) : (
         <ul className="space-y-2">

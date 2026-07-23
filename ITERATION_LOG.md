@@ -2,6 +2,7 @@
 
 | Date | Item | Summary | Verification | Follow-ups |
 | --- | --- | --- | --- | --- |
+| 2026-07-23 | Phase E / B2–B4+B7+E1–E2+G1 | SHA-256 on upload + PDF hash manifest; signed-URL download + image previews (demo stub); retention purge cron; overdue `notified_at` dedupe; owner/admin gates on settings/billing/clients/onboarding/Stripe; member invite send/remove; vitest crosswalk/coverage | `npm test` + `npm run lint` + `npm run build` green | Apply migration 005; Entra + `SUPABASE_SERVICE_ROLE_KEY` for live invites; G2/G3 CI |
 | 2026-07-22 | setup | Seeded `BACKLOG.md` + `ITERATION_LOG.md` from continuous-improvement plan | n/a | Run iteration 1: A1 + A2 |
 | 2026-07-22 | A1 + A2 | Fail-closed Stripe webhook (require `STRIPE_WEBHOOK_SECRET` + signature) and cron auth (require `CRON_SECRET` in non-demo; demo still enforces when set) | `npm run build` + `npm run lint` green | Next: A3 demo IDOR |
 | 2026-07-22 | A3 | Org-scope demo case accessors/mutations; reject cross-org create/export/detail; live create/export/detail verify session org or agency child | `npm run build` + `npm run lint` green | Next: A4 evidence upload limits |
