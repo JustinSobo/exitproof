@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { EmptyState } from "@/components/app/empty-state";
 import { createClientOrgAction } from "@/lib/actions/cases";
 import { getCurrentOrg } from "@/lib/auth";
 import { demoStore } from "@/lib/demo/store";
@@ -41,9 +43,9 @@ export default async function ClientsPage() {
       {!isAgency ? (
         <div className="rounded-xl border border-[var(--amber)]/40 bg-[var(--amber)]/10 px-4 py-3 text-sm">
           Upgrade to Agency ($249/mo) to create client organizations.{" "}
-          <a href="/billing" className="text-[var(--amber)] underline">
+          <Link href="/billing" className="text-[var(--amber)] underline">
             Billing
-          </a>
+          </Link>
         </div>
       ) : null}
 
@@ -77,20 +79,30 @@ export default async function ClientsPage() {
         </form>
       ) : null}
 
-      <ul className="space-y-2">
-        {clients.map((c) => (
-          <li
-            key={c.id}
-            className="rounded-lg border border-[var(--line)] px-4 py-3 text-sm"
-          >
-            <span className="text-white">{c.name}</span>
-            <span className="text-[var(--fog)]"> · {c.stack_profile}</span>
-          </li>
-        ))}
-        {clients.length === 0 ? (
-          <li className="text-[var(--fog)]">No client orgs yet.</li>
-        ) : null}
-      </ul>
+      {clients.length === 0 ? (
+        <EmptyState
+          title="No client orgs yet"
+          body={
+            isAgency
+              ? "Add a client tenant to run isolated offboarding cases under your agency parent."
+              : "Client orgs are available on the Agency plan for MSPs and multi-tenant IT teams."
+          }
+          actionHref={isAgency ? undefined : "/billing"}
+          actionLabel={isAgency ? undefined : "View billing"}
+        />
+      ) : (
+        <ul className="space-y-2">
+          {clients.map((c) => (
+            <li
+              key={c.id}
+              className="rounded-lg border border-[var(--line)] px-4 py-3 text-sm"
+            >
+              <span className="text-white">{c.name}</span>
+              <span className="text-[var(--fog)]"> · {c.stack_profile}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { enterDemoAction } from "@/lib/actions/auth";
+import { isDemoMode } from "@/lib/env";
 
 export default function MarketingLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const demo = isDemoMode();
+
   return (
     <div className="ep-atmosphere relative min-h-screen text-[var(--mist)]">
       <div className="ep-grid pointer-events-none absolute inset-0" />
@@ -26,14 +29,16 @@ export default function MarketingLayout({
           >
             Sign in
           </Link>
-          <form action={enterDemoAction}>
-            <button
-              type="submit"
-              className="rounded-md border border-[var(--line)] bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
-            >
-              Try demo
-            </button>
-          </form>
+          {demo ? (
+            <form action={enterDemoAction}>
+              <button
+                type="submit"
+                className="rounded-md border border-[var(--line)] bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
+              >
+                Try demo
+              </button>
+            </form>
+          ) : null}
           <Link
             href="/auth/signup"
             className="rounded-md bg-[var(--teal)] px-3.5 py-2 font-medium text-[#04201d] hover:bg-[var(--teal-bright)]"
@@ -48,7 +53,10 @@ export default function MarketingLayout({
           <p className="font-[family-name:var(--font-syne)] text-lg text-white">
             ExitProof
           </p>
-          <p>Audit-ready IT employee offboarding. Independent SaaS product.</p>
+          <p>
+            Mid-market personnel-termination evidence for FedRAMP, CMMC, and SOC
+            audits.
+          </p>
         </div>
       </footer>
     </div>

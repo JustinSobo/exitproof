@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EmptyState } from "@/components/app/empty-state";
 import { getCurrentOrg } from "@/lib/auth";
 import { canCreateOffboard, normalizeMonthlyUsage } from "@/lib/billing/gates";
 import { PLANS } from "@/lib/billing/plans";
@@ -70,49 +71,57 @@ export default async function DashboardPage() {
         <h2 className="font-[family-name:var(--font-syne)] text-xl font-600 text-white">
           Recent cases
         </h2>
-        <Link
-          href="/cases/new"
-          className="rounded-md bg-[var(--teal)] px-3 py-2 text-sm font-semibold text-[#04201d]"
-        >
-          New offboard
-        </Link>
+        {cases.length > 0 ? (
+          <Link
+            href="/cases/new"
+            className="rounded-md bg-[var(--teal)] px-3 py-2 text-sm font-semibold text-[#04201d]"
+          >
+            New offboard
+          </Link>
+        ) : null}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-[var(--line)]">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-white/5 text-[var(--fog)]">
-            <tr>
-              <th className="px-4 py-3 font-medium">Employee</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Due</th>
-              <th className="px-4 py-3 font-medium">Assignee</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cases.length === 0 ? (
+      {cases.length === 0 ? (
+        <EmptyState
+          title="No offboards yet"
+          body="Create your first explained offboarding checklist. Attach evidence as you revoke access, then export a framework-filtered Evidence Pack."
+          actionHref="/cases/new"
+          actionLabel="New offboard"
+        />
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-[var(--line)]">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-white/5 text-[var(--fog)]">
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-[var(--fog)]">
-                  No cases yet. Create your first offboarding.
-                </td>
+                <th className="px-4 py-3 font-medium">Employee</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Due</th>
+                <th className="px-4 py-3 font-medium">Assignee</th>
               </tr>
-            ) : (
-              cases.map((c) => (
+            </thead>
+            <tbody>
+              {cases.map((c) => (
                 <tr key={c.id} className="border-t border-[var(--line)]">
                   <td className="px-4 py-3">
-                    <Link href={`/cases/${c.id}`} className="text-white hover:text-[var(--teal-bright)]">
+                    <Link
+                      href={`/cases/${c.id}`}
+                      className="text-white hover:text-[var(--teal-bright)]"
+                    >
                       {c.employee_name}
                     </Link>
                     <p className="text-xs text-[var(--fog)]">{c.employee_email}</p>
                   </td>
-                  <td className="px-4 py-3 capitalize">{c.status.replace("_", " ")}</td>
+                  <td className="px-4 py-3 capitalize">
+                    {c.status.replace("_", " ")}
+                  </td>
                   <td className="px-4 py-3">{c.due_date || "—"}</td>
                   <td className="px-4 py-3">{c.assignee_email || "—"}</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

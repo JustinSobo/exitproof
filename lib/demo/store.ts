@@ -324,6 +324,10 @@ export const demoStore = {
     return getState().orgs.filter((o) => o.parent_org_id === parentOrgId);
   },
 
+  listMembers(orgId: string): OrgMember[] {
+    return getState().members.filter((m) => m.org_id === orgId);
+  },
+
   updateOrg(
     orgId: string,
     patch: Partial<Pick<Organization, "name" | "stack_profile" | "plan" | "stripe_customer_id" | "stripe_subscription_id" | "retention_days">>,

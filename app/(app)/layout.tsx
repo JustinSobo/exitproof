@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { signOutAction } from "@/lib/actions/auth";
 import { getCurrentOrg } from "@/lib/auth";
 import { isDemoMode } from "@/lib/env";
+import { needsOnboarding } from "@/lib/onboarding/questionnaire";
 
 const links = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/cases", label: "Cases" },
+  { href: "/compliance", label: "Compliance" },
   { href: "/cases/new", label: "New offboard" },
   { href: "/settings", label: "Settings" },
   { href: "/billing", label: "Billing" },
@@ -20,6 +23,15 @@ export default async function AppLayout({
 }) {
   const ctx = await getCurrentOrg();
   if (!ctx) redirect("/auth/login");
+
+  const headerList = await headers();
+  const pathname = headerList.get("x-pathname") ?? "";
+  const onOnboarding =
+    pathname === "/onboarding" || pathname.startsWith("/onboarding/");
+
+  if (needsOnboarding(ctx.org) && !onOnboarding) {
+    redirect("/onboarding");
+  }
 
   return (
     <div className="ep-atmosphere min-h-screen text-[var(--mist)]">

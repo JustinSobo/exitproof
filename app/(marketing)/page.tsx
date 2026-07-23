@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { PLANS } from "@/lib/billing/plans";
 import { enterDemoAction } from "@/lib/actions/auth";
+import { isDemoMode } from "@/lib/env";
 
 const paidPlans = [PLANS.team, PLANS.growth, PLANS.agency];
 
 export default function LandingPage() {
+  const demo = isDemoMode();
+
   return (
     <div>
       {/* Hero — brand dominant, one composition, full-bleed atmosphere */}
@@ -16,13 +19,12 @@ export default function LandingPage() {
             Exit<span className="text-[var(--teal-bright)]">Proof</span>
           </p>
           <h1 className="ep-rise-delay mt-6 max-w-2xl font-[family-name:var(--font-syne)] text-2xl font-600 leading-snug text-[var(--mist)] sm:text-3xl">
-            Audit-ready IT offboarding — checklists, evidence, and exportable
-            proof.
+            Mid-market offboarding evidence for FedRAMP, CMMC, and SOC audits.
           </h1>
           <p className="ep-rise-delay-2 mt-4 max-w-xl text-base leading-relaxed text-[var(--fog)] sm:text-lg">
-            Guide every access revocation with stack-aware steps, attach
-            evidence, keep an append-only audit trail, and ship a PDF/CSV
-            Evidence Pack when auditors ask.
+            Sign in with Microsoft Entra, run an explained checklist, and export
+            a framework-filtered Evidence Pack that cites control IDs and proves
+            revocation — built for teams of ~50–2000, not a full GRC suite.
           </p>
           <div className="ep-rise-delay-2 mt-8 flex flex-wrap items-center gap-3">
             <Link
@@ -31,14 +33,23 @@ export default function LandingPage() {
             >
               Start 3 free offboards
             </Link>
-            <form action={enterDemoAction}>
-              <button
-                type="submit"
+            {demo ? (
+              <form action={enterDemoAction}>
+                <button
+                  type="submit"
+                  className="rounded-md border border-[var(--line)] bg-white/5 px-5 py-3 text-sm font-medium hover:bg-white/10"
+                >
+                  Open live demo
+                </button>
+              </form>
+            ) : (
+              <Link
+                href="/auth/login"
                 className="rounded-md border border-[var(--line)] bg-white/5 px-5 py-3 text-sm font-medium hover:bg-white/10"
               >
-                Open live demo
-              </button>
-            </form>
+                Continue with Microsoft
+              </Link>
+            )}
           </div>
         </div>
 
@@ -47,25 +58,26 @@ export default function LandingPage() {
 
       <section id="how" className="mx-auto max-w-6xl px-6 py-20">
         <h2 className="font-[family-name:var(--font-syne)] text-3xl font-700 text-white">
-          Built for the moment access must die cleanly
+          From leaver to auditor-ready pack
         </h2>
         <p className="mt-3 max-w-2xl text-[var(--fog)]">
-          Seeded from public SOC 2, ISO 27001, and NIST-style access-revocation
-          practice — Microsoft 365, Google Workspace, and hybrid SaaS.
+          Curated FedRAMP / NIST 800-53, CMMC L1+L2, SOC 2, ISO 27001, HIPAA,
+          and NIST CSF mappings — only the offboarding controls assessors
+          sample.
         </p>
         <div className="mt-10 grid gap-8 md:grid-cols-3">
           {[
             {
-              title: "Stack-aware templates",
-              body: "Pick M365, Google, or hybrid. Critical steps require evidence before you close.",
+              title: "Entra SSO, then checklist",
+              body: "Microsoft-first login for mid-market IT. Stack-aware steps for M365, Google, or hybrid SaaS.",
             },
             {
-              title: "Evidence that sticks",
-              body: "Upload screenshots and exports to storage. Notes and ticket URLs travel with every step.",
+              title: "Controls that explain why",
+              body: "Each critical step shows plain-English assessor language plus control chips (AC-2, PS-4, CC6.2, CMMC practices).",
             },
             {
-              title: "Evidence Pack export",
-              body: "One click PDF + CSV for auditors — case summary, checklist, attachments, audit events.",
+              title: "Framework-filtered export",
+              body: "PDF and CSV Evidence Packs filtered to FedRAMP, CMMC, SOC 2, or all — same case, auditor-shaped views.",
             },
           ].map((item) => (
             <div key={item.title} className="border-t border-[var(--line)] pt-5">
