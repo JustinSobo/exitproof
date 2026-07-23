@@ -12,3 +12,4 @@
 | 2026-07-22 | D4 | Align landing trial copy to 3 free offboards (remove misleading 14-day claim) | `npm run build` + `npm run lint` green | Next: D7 login errors |
 | 2026-07-22 | D7 | Surface real login/signup error and success messages from query params | `npm run build` + `npm run lint` green | Next: D2 agency child cases |
 | 2026-07-22 | D2 | Live dashboard/cases list parent + agency child org cases via shared `listCasesForOrg` | `npm run build` + `npm run lint` green | Next: D1 template IDs |
+| 2026-07-22 | D1 | Align TS template IDs with SQL seed UUIDs; live createCaseAction persists `template_id` | `npm run build` + `npm run lint` green | Next: B1 requires_evidence |

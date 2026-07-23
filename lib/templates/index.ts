@@ -3,6 +3,20 @@ import { HYBRID_SAAS } from "@/lib/templates/hybrid-saas";
 import { M365_SMB } from "@/lib/templates/m365-smb";
 import type { OffboardingTemplate, StackProfile, TemplateStep } from "@/lib/types";
 
+/** SQL seed UUIDs from `003_seed_templates.sql` — source of truth for live FK. */
+export const TEMPLATE_IDS = {
+  m365: "11111111-1111-1111-1111-111111111101",
+  google: "11111111-1111-1111-1111-111111111102",
+  hybrid: "11111111-1111-1111-1111-111111111103",
+} as const;
+
+/** Legacy TS slug ids kept for lookup compatibility. */
+const LEGACY_ALIASES: Record<string, string> = {
+  "tpl-m365-smb": TEMPLATE_IDS.m365,
+  "tpl-google-smb": TEMPLATE_IDS.google,
+  "tpl-hybrid-saas": TEMPLATE_IDS.hybrid,
+};
+
 const SEEDS = [M365_SMB, GOOGLE_SMB, HYBRID_SAAS];
 
 export function getSeedTemplates(): OffboardingTemplate[] {
@@ -21,7 +35,10 @@ export function getSeedTemplates(): OffboardingTemplate[] {
 }
 
 export function getTemplateById(id: string): OffboardingTemplate | undefined {
-  return getSeedTemplates().find((t) => t.id === id || t.slug === id);
+  const resolved = LEGACY_ALIASES[id] ?? id;
+  return getSeedTemplates().find(
+    (t) => t.id === resolved || t.slug === id || t.slug === resolved,
+  );
 }
 
 export function getTemplatesForStack(
@@ -37,9 +54,9 @@ export function defaultTemplateForStack(
 ): OffboardingTemplate {
   const preferred =
     stack === "m365"
-      ? "tpl-m365-smb"
+      ? TEMPLATE_IDS.m365
       : stack === "google"
-        ? "tpl-google-smb"
-        : "tpl-hybrid-saas";
+        ? TEMPLATE_IDS.google
+        : TEMPLATE_IDS.hybrid;
   return getTemplateById(preferred) ?? getSeedTemplates()[0];
 }

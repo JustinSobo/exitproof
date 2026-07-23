@@ -20,7 +20,7 @@ function step(
 }
 
 export const HYBRID_SAAS: SeedTemplate = {
-  id: "tpl-hybrid-saas",
+  id: "11111111-1111-1111-1111-111111111103",
   slug: "hybrid-saas",
   name: "Hybrid SaaS Offboarding",
   stack: "hybrid",

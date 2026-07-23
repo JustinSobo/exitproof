@@ -20,7 +20,7 @@ function step(
 }
 
 export const GOOGLE_SMB: SeedTemplate = {
-  id: "tpl-google-smb",
+  id: "11111111-1111-1111-1111-111111111102",
   slug: "google-workspace-smb",
   name: "Google Workspace SMB Offboarding",
   stack: "google",

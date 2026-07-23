@@ -88,7 +88,7 @@ export async function createCaseAction(formData: FormData): Promise<void> {
       status: "open",
       assignee_email: assigneeEmail || ctx.user.email,
       due_date: dueDate || null,
-      template_id: null,
+      template_id: template.id,
       template_name: template.name,
       created_by: ctx.user.id,
       notes: notes || null,

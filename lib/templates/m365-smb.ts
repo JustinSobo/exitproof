@@ -29,7 +29,7 @@ function step(
 }
 
 export const M365_SMB: SeedTemplate = {
-  id: "tpl-m365-smb",
+  id: "11111111-1111-1111-1111-111111111101",
   slug: "m365-smb",
   name: "Microsoft 365 SMB Offboarding",
   stack: "m365",
