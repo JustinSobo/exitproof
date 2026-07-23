@@ -2,8 +2,7 @@ import Link from "next/link";
 import { getCurrentOrg } from "@/lib/auth";
 import { canCreateOffboard, normalizeMonthlyUsage } from "@/lib/billing/gates";
 import { PLANS } from "@/lib/billing/plans";
-import { demoStore } from "@/lib/demo/store";
-import { isDemoMode } from "@/lib/env";
+import { listCasesForOrg } from "@/lib/cases/list";
 import { redirect } from "next/navigation";
 
 export const metadata = { title: "Dashboard" };
@@ -15,21 +14,7 @@ export default async function DashboardPage() {
   const org = normalizeMonthlyUsage(ctx.org);
   const plan = PLANS[org.plan];
   const gate = canCreateOffboard(org);
-
-  let cases = [];
-  if (isDemoMode()) {
-    cases = demoStore.listCases(org.id);
-  } else {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("offboarding_cases")
-      .select("*")
-      .eq("org_id", org.id)
-      .order("created_at", { ascending: false })
-      .limit(8);
-    cases = data ?? [];
-  }
+  const cases = await listCasesForOrg(org.id, { limit: 8 });
 
   const openCount = cases.filter((c) => c.status !== "closed").length;
 

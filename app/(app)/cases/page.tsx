@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentOrg } from "@/lib/auth";
-import { demoStore } from "@/lib/demo/store";
-import { isDemoMode } from "@/lib/env";
+import { listCasesForOrg } from "@/lib/cases/list";
 
 export const metadata = { title: "Cases" };
 
@@ -10,19 +9,7 @@ export default async function CasesPage() {
   const ctx = await getCurrentOrg();
   if (!ctx) redirect("/auth/login");
 
-  let cases = [];
-  if (isDemoMode()) {
-    cases = demoStore.listCases(ctx.org.id);
-  } else {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("offboarding_cases")
-      .select("*")
-      .eq("org_id", ctx.org.id)
-      .order("created_at", { ascending: false });
-    cases = data ?? [];
-  }
+  const cases = await listCasesForOrg(ctx.org.id);
 
   return (
     <div className="space-y-6">
