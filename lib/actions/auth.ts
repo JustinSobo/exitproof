@@ -123,6 +123,9 @@ export async function signOutAction(): Promise<void> {
 }
 
 export async function enterDemoAction(): Promise<void> {
+  if (!isDemoMode()) {
+    redirect("/auth/login?error=" + encodeURIComponent("Demo mode is not enabled on this deployment."));
+  }
   const { token } = demoStore.login("demo@exitproof.app", "demo1234");
   const cookieStore = await cookies();
   cookieStore.set(DEMO_SESSION_COOKIE, token, {
