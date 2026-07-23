@@ -62,6 +62,7 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 - [x] **H4** Phase 4 foundation: Hybrid AD connector skeleton (`apps/connector`), protocol docs, register/heartbeat/snapshot APIs, case AD status + mismatch UI, migration `009_ad_connector.sql`
 - [x] **H5** Phase 5: auto-evidence policies (`lib/evidence/`), Graph/AD → FedRAMP/CMMC auto-map, attest-on-critical, Evidence Pack v3 system vs human sections, migration `010_auto_evidence_policy.sql`, DEMO Jordan Lee
 - [ ] **H6** Live Azure deploy (Container Apps + SQL + Blob + KV) beyond Bicep stubs
+- [~] **H7** Phase 7 Graph write/disable — **deferred** to future charter ([ADR-003](docs/adr/003-graph-write-path-deferred.md)); dual-control only after RO trust; out of scope for Phases 0–6 (do not implement)
 
 ## Pillar F — UX/UI (score 1)
 

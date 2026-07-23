@@ -35,6 +35,7 @@ See ADRs:
 
 - [ADR-001: Tenancy and Azure platform](adr/001-tenancy-and-azure.md)
 - [ADR-002: Graph read-only and AD Hybrid Connector](adr/002-graph-readonly-and-ad-connector.md)
+- [ADR-003: Graph write-path deferred](adr/003-graph-write-path-deferred.md) — Phase 7 dual-control disable/revoke; out of scope for Phases 0–6
 
 ---
 
@@ -186,7 +187,7 @@ Horizon: **~6–9 months** calendar for full charter if one focused team. Each p
 | **4** | Hybrid AD connector (outbound mTLS) | Lab AD detect + pack includes AD export |
 | **5** | Auto-evidence policies & Evidence Pack v3 | System vs human evidence; attest-on-critical — **shipped** (`lib/evidence/`, migration `010`, Pack v3 sections) |
 | **6** | Pen test, CI/CD, DR, platform SOC 2 path | Controls tested; RPO/RTO defined |
-| **7** | *(Future)* Graph write / disable with dual-control | Only after RO trust established |
+| **7** | *(Deferred — future charter)* Graph write / disable with dual-control | Only after RO trust; see [ADR-003](adr/003-graph-write-path-deferred.md) |
 
 Supporting docs for Phase 0:
 
@@ -263,6 +264,7 @@ Commercial ops: PSA/CRM ticket templates, SOW language, RACI (GridLogic vs custo
 | [CHARTER.md](CHARTER.md) | This document |
 | [adr/001-tenancy-and-azure.md](adr/001-tenancy-and-azure.md) | Shared hard isolation + Dedicated SKU + Azure stack |
 | [adr/002-graph-readonly-and-ad-connector.md](adr/002-graph-readonly-and-ad-connector.md) | Graph RO + Hybrid Connector; no write until Phase 7 |
+| [adr/003-graph-write-path-deferred.md](adr/003-graph-write-path-deferred.md) | Phase 7 Graph write/disable deferred; criteria to open future charter |
 | [security/threat-model.md](security/threat-model.md) | STRIDE multi-tenant + connectors; evidence = Restricted |
 | [commercial/skus.md](commercial/skus.md) | Standard / Dedicated / add-ons |
 | [commercial/dpa-notes.md](commercial/dpa-notes.md) | DPA / admin consent / subprocessor checklist for counsel |

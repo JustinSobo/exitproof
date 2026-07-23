@@ -3,7 +3,7 @@
 **Status:** Accepted  
 **Date:** 2026-07-23  
 **Deciders:** ExitProof / GridLogic product & security  
-**Related:** [CHARTER.md](../CHARTER.md), [ADR-001](001-tenancy-and-azure.md)
+**Related:** [CHARTER.md](../CHARTER.md), [ADR-001](001-tenancy-and-azure.md), [ADR-003](003-graph-write-path-deferred.md)
 
 ## Context
 
@@ -77,7 +77,7 @@ When `auto_evidence_enabled` (or SKU add-on) is on:
 
 ### 5. Phase gate for write path
 
-**Phase 7** (future, separate charter) may introduce dual-control Graph disable/revoke **only after** read-only trust is proven (pen test, consent UX, revoke drills, customer runbooks).
+**Phase 7** is **deferred** (not implemented in Phases 0–6). A future charter may introduce dual-control Graph disable/revoke **only after** read-only trust is proven. Gate criteria and non-goals: [ADR-003](003-graph-write-path-deferred.md).
 
 ## Consequences
 
@@ -99,7 +99,7 @@ When `auto_evidence_enabled` (or SKU add-on) is on:
 
 - Exact Graph SDK and caching/TTL for snapshots — Phase 3 design
 - Connector protocol framing (HTTP long-poll vs websocket) — Phase 4 design
-- Dual-control UX for write path — Phase 7 charter
+- Dual-control UX for write path — deferred; [ADR-003](003-graph-write-path-deferred.md)
 
 ## Security notes
 
