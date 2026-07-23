@@ -6,6 +6,8 @@ import {
   setAutoEvidenceAction,
   setEntraTenantIdAction,
 } from "@/lib/actions/connectors";
+import { Alert } from "@/components/ui/alert";
+import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentOrg, isOrgAdminRole, sessionTenantId } from "@/lib/auth";
 import { GRAPH_ADMIN_CONSENT_SCOPES, graphCredsSecretRef } from "@/lib/connectors/graph";
 import { isDemoMode } from "@/lib/env";
@@ -45,38 +47,27 @@ export default async function ConnectorsPage({
 
   return (
     <div className="mx-auto max-w-xl space-y-10">
-      <div>
-        <h1 className="font-[family-name:var(--font-syne)] text-3xl font-700 text-white">
-          Directory connectors
-        </h1>
-        <p className="mt-2 text-[var(--fog)]">
-          Microsoft Graph read-only audit for Entra account state. No write or
-          disable scopes in this phase.
-        </p>
-      </div>
+      <PageHeader
+        title="Directory connectors"
+        description="Microsoft Graph read-only audit for Entra account state. No write or disable scopes in this phase."
+      />
 
-      {params.error ? (
-        <p className="rounded-md border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-3 py-2 text-sm text-[#ffb4ae]">
-          {params.error}
-        </p>
-      ) : null}
+      {params.error ? <Alert variant="danger">{params.error}</Alert> : null}
       {params.consented || params.consent ? (
-        <p className="rounded-md border border-[var(--teal)]/40 bg-[var(--teal)]/10 px-3 py-2 text-sm text-[var(--teal-bright)]">
+        <Alert variant="success">
           {isDemoMode()
             ? "Consent recorded (demo). Directory snapshots use the mock Graph client."
             : "Consent return received. Confirm status is Healthy after Graph validates the Enterprise Application."}
-        </p>
+        </Alert>
       ) : null}
       {params.saved ? (
-        <p className="rounded-md border border-[var(--teal)]/40 bg-[var(--teal)]/10 px-3 py-2 text-sm text-[var(--teal-bright)]">
-          Connector settings saved.
-        </p>
+        <Alert variant="success">Connector settings saved.</Alert>
       ) : null}
 
       {!canManage ? (
-        <p className="rounded-md border border-[var(--line)] bg-white/[0.03] px-3 py-2 text-sm text-[var(--fog)]">
+        <Alert variant="info">
           Only owners and admins can grant consent or change connector settings.
-        </p>
+        </Alert>
       ) : null}
 
       <section className="space-y-3">

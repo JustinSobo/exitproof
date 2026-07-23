@@ -23,7 +23,7 @@ export function GraphEntraMismatchBanner({
   if (!snapshot && !note) {
     return (
       <section
-        className="border border-[var(--line)] bg-black/20 px-4 py-3 text-sm"
+        className="ep-panel border border-[var(--line)] bg-black/20 px-4 py-3 text-sm"
         aria-label="Entra Graph status"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -66,10 +66,10 @@ export function GraphEntraMismatchBanner({
 
   return (
     <section
-      className={`space-y-2 border px-4 py-3 text-sm ${
+      className={`ep-panel space-y-2 px-4 py-3 text-sm ${
         mismatch
           ? "border-[var(--danger)]/40 bg-[var(--danger)]/10"
-          : "border-[var(--line)] bg-black/20"
+          : ""
       }`}
       aria-label="Entra Graph status"
       role={mismatch ? "alert" : undefined}
