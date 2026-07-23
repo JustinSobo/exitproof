@@ -12,7 +12,7 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 - [x] **A2** Cron route open when `CRON_SECRET` unset — require in non-demo (`app/api/cron/overdue/route.ts`)
 - [x] **A3** Demo IDOR: export routes + case detail don't verify case ∈ caller's org; demo `createCase` accepts arbitrary `org_id` (`lib/demo/store.ts`, `lib/actions/cases.ts`)
 - [x] **A4** Evidence upload: no size/MIME limits — 10 MB cap, png/jpg/webp/pdf allowlist, zod validation (`app/api/evidence/upload/route.ts`)
-- [ ] **A5** Unescaped HTML interpolation in overdue emails (`lib/resend.ts`)
+- [x] **A5** Unescaped HTML interpolation in overdue emails (`lib/resend.ts`)
 - [ ] **A6** RLS: any member = admin; free top-level org INSERT; no DELETE policies (migration `004_roles.sql`)
 
 ## Pillar B — Compliance standards depth (score 3–4)
