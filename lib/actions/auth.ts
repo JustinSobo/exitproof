@@ -49,29 +49,18 @@ export async function signUpAction(formData: FormData): Promise<void> {
   if (error) fail("/auth/signup", error.message);
   if (!data.user) fail("/auth/signup", "Signup failed");
 
-  const { data: org, error: orgError } = await supabase
-    .from("organizations")
-    .insert({
-      name: orgName || `${fullName || email}'s Organization`,
-      stack_profile: "hybrid",
-      plan: "trial",
-    })
-    .select("*")
-    .single();
+  const { data: orgId, error: orgError } = await supabase.rpc(
+    "bootstrap_organization",
+    {
+      p_name: orgName || `${fullName || email}'s Organization`,
+      p_stack: "hybrid",
+      p_full_name: fullName || null,
+      p_email: email,
+    },
+  );
 
   if (orgError) fail("/auth/signup", orgError.message);
-
-  const { error: memberError } = await supabase
-    .from("organization_members")
-    .insert({
-      org_id: org.id,
-      user_id: data.user.id,
-      role: "owner",
-      email,
-      full_name: fullName || null,
-    });
-
-  if (memberError) fail("/auth/signup", memberError.message);
+  if (!orgId) fail("/auth/signup", "Failed to create organization");
 
   redirect("/dashboard");
 }

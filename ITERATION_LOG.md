@@ -7,3 +7,4 @@
 | 2026-07-22 | A3 | Org-scope demo case accessors/mutations; reject cross-org create/export/detail; live create/export/detail verify session org or agency child | `npm run build` + `npm run lint` green | Next: A4 evidence upload limits |
 | 2026-07-22 | A4 | Evidence upload: zod validation, 10 MB cap, PNG/JPG/WebP/PDF MIME+extension allowlist (demo + live) | `npm run build` + `npm run lint` green | Next: A5 overdue email HTML escape |
 | 2026-07-22 | A5 | Escape HTML (and strip subject newlines) in overdue critical-step emails | `npm run build` + `npm run lint` green | Next: A6 RLS roles |
+| 2026-07-22 | A6 | Migration `004_roles.sql`: `is_org_admin`, block free top-level org insert, admin-scoped updates/deletes; signup via `bootstrap_organization` | `npm run build` + `npm run lint` green | Next: D5 enterDemo guard |
