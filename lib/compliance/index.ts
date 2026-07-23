@@ -37,6 +37,13 @@ export {
 } from "@/lib/compliance/coverage";
 
 export {
+  postureForFramework,
+  postureForSelectedFrameworks,
+  type FrameworkPosture,
+  type CaseCoverageInput,
+} from "@/lib/compliance/org-posture";
+
+export {
   CONTROL_UUIDS,
   FRAMEWORK_UUIDS,
   controlUuid,

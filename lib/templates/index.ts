@@ -1,7 +1,13 @@
 import { GOOGLE_SMB } from "@/lib/templates/google-smb";
 import { HYBRID_SAAS } from "@/lib/templates/hybrid-saas";
 import { M365_SMB } from "@/lib/templates/m365-smb";
+import { escalateEvidenceForFrameworks } from "@/lib/templates/escalate";
 import type { OffboardingTemplate, StackProfile, TemplateStep } from "@/lib/types";
+
+export {
+  escalateEvidenceForFrameworks,
+  needsEvidenceEscalation,
+} from "@/lib/templates/escalate";
 
 /** SQL seed UUIDs from `003_seed_templates.sql` — source of truth for live FK. */
 export const TEMPLATE_IDS = {
@@ -65,4 +71,12 @@ export function defaultTemplateForStack(
         ? TEMPLATE_IDS.google
         : TEMPLATE_IDS.hybrid;
   return getTemplateById(preferred) ?? getSeedTemplates()[0];
+}
+
+/** Template steps with FedRAMP/CMMC evidence escalation applied. */
+export function templateStepsForOrg(
+  template: OffboardingTemplate,
+  selectedFrameworks: string[] | null | undefined,
+): TemplateStep[] {
+  return escalateEvidenceForFrameworks(template.steps, selectedFrameworks);
 }

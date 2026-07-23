@@ -5,7 +5,12 @@ import {
   assertCanCloseCase,
   assertCanCompleteItem,
 } from "@/lib/cases/evidence-rules";
-import { defaultTemplateForStack, getSeedTemplates, getTemplateById } from "@/lib/templates";
+import {
+  defaultTemplateForStack,
+  getSeedTemplates,
+  getTemplateById,
+  templateStepsForOrg,
+} from "@/lib/templates";
 import type {
   AuditEvent,
   CaseStatus,
@@ -99,6 +104,7 @@ function seedDemoIfNeeded(state: DemoState) {
   });
 
   const template = defaultTemplateForStack("hybrid");
+  const steps = templateStepsForOrg(template, org.selected_frameworks);
   const caseId = "demo-case-1";
   const due = new Date();
   due.setDate(due.getDate() + 2);
@@ -119,7 +125,7 @@ function seedDemoIfNeeded(state: DemoState) {
     notes: "Seeded demo offboarding case.",
   });
 
-  for (const step of template.steps) {
+  for (const step of steps) {
     state.items.push({
       id: randomUUID(),
       case_id: caseId,
@@ -219,7 +225,7 @@ export const demoStore = {
     const org: Organization = {
       id: randomUUID(),
       name: orgName || `${fullName}'s Organization`,
-      stack_profile: "hybrid",
+      stack_profile: "m365",
       plan: "trial",
       stripe_customer_id: null,
       stripe_subscription_id: null,
@@ -269,7 +275,7 @@ export const demoStore = {
       const org: Organization = {
         id: randomUUID(),
         name: `${user.full_name}'s Organization`,
-        stack_profile: "hybrid",
+        stack_profile: "m365",
         plan: "trial",
         stripe_customer_id: null,
         stripe_subscription_id: null,
@@ -330,7 +336,20 @@ export const demoStore = {
 
   updateOrg(
     orgId: string,
-    patch: Partial<Pick<Organization, "name" | "stack_profile" | "plan" | "stripe_customer_id" | "stripe_subscription_id" | "retention_days">>,
+    patch: Partial<
+      Pick<
+        Organization,
+        | "name"
+        | "stack_profile"
+        | "plan"
+        | "stripe_customer_id"
+        | "stripe_subscription_id"
+        | "retention_days"
+        | "selected_frameworks"
+        | "onboarding_completed_at"
+        | "entra_tenant_id"
+      >
+    >,
   ) {
     const state = getState();
     const org = state.orgs.find((o) => o.id === orgId);
@@ -338,6 +357,9 @@ export const demoStore = {
     Object.assign(org, patch);
     if (patch.plan) {
       org.retention_days = PLANS[patch.plan].retentionDays;
+    }
+    if (patch.selected_frameworks) {
+      org.selected_frameworks = [...patch.selected_frameworks];
     }
     return org;
   },
@@ -436,6 +458,7 @@ export const demoStore = {
     const template =
       getTemplateById(input.templateId) ??
       defaultTemplateForStack(org.stack_profile);
+    const steps = templateStepsForOrg(template, org.selected_frameworks);
 
     const caseId = randomUUID();
     const offboarding: OffboardingCase = {
@@ -455,7 +478,7 @@ export const demoStore = {
     };
     state.cases.push(offboarding);
 
-    for (const step of template.steps) {
+    for (const step of steps) {
       state.items.push({
         id: randomUUID(),
         case_id: caseId,

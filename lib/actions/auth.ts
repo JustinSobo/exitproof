@@ -32,7 +32,7 @@ export async function signUpAction(formData: FormData): Promise<void> {
     } catch (e) {
       fail("/auth/signup", e instanceof Error ? e.message : "Signup failed");
     }
-    redirect("/dashboard");
+    redirect("/onboarding");
   }
 
   const { createClient } = await import("@/lib/supabase/server");
@@ -42,7 +42,7 @@ export async function signUpAction(formData: FormData): Promise<void> {
     password,
     options: {
       data: { full_name: fullName },
-      emailRedirectTo: `${getAppUrl()}/auth/callback`,
+      emailRedirectTo: `${getAppUrl()}/auth/callback?next=/onboarding`,
     },
   });
 
@@ -53,7 +53,7 @@ export async function signUpAction(formData: FormData): Promise<void> {
     "bootstrap_organization",
     {
       p_name: orgName || `${fullName || email}'s Organization`,
-      p_stack: "hybrid",
+      p_stack: "m365",
       p_full_name: fullName || null,
       p_email: email,
     },
@@ -62,7 +62,7 @@ export async function signUpAction(formData: FormData): Promise<void> {
   if (orgError) fail("/auth/signup", orgError.message);
   if (!orgId) fail("/auth/signup", "Failed to create organization");
 
-  redirect("/dashboard");
+  redirect("/onboarding");
 }
 
 export async function signInWithMicrosoftAction(

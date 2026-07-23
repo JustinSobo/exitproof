@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireOrg } from "@/lib/auth";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
-import { defaultTemplateForStack, getTemplateById } from "@/lib/templates";
+import { defaultTemplateForStack, getTemplateById, templateStepsForOrg } from "@/lib/templates";
 import type { CaseStatus, ChecklistItemStatus, StackProfile } from "@/lib/types";
 
 export async function createCaseAction(formData: FormData): Promise<void> {
@@ -51,10 +51,12 @@ export async function createCaseAction(formData: FormData): Promise<void> {
 
   // org_id from client must be current org or an agency child — never arbitrary.
   let orgId = ctx.org.id;
+  let selectedFrameworks = ctx.org.selected_frameworks ?? [];
+  let stackProfile = ctx.org.stack_profile;
   if (requestedOrgId && requestedOrgId !== ctx.org.id) {
     const { data: child } = await supabase
       .from("organizations")
-      .select("id")
+      .select("id, selected_frameworks, stack_profile")
       .eq("id", requestedOrgId)
       .eq("parent_org_id", ctx.org.id)
       .maybeSingle();
@@ -64,11 +66,16 @@ export async function createCaseAction(formData: FormData): Promise<void> {
       );
     }
     orgId = child.id;
+    selectedFrameworks = Array.isArray(child.selected_frameworks)
+      ? (child.selected_frameworks as string[])
+      : [];
+    stackProfile = (child.stack_profile as StackProfile) || stackProfile;
   }
 
   const template =
     getTemplateById(templateId) ??
-    defaultTemplateForStack(ctx.org.stack_profile);
+    defaultTemplateForStack(stackProfile);
+  const steps = templateStepsForOrg(template, selectedFrameworks);
 
   const { canCreateOffboard, normalizeMonthlyUsage } = await import(
     "@/lib/billing/gates"
@@ -110,7 +117,7 @@ export async function createCaseAction(formData: FormData): Promise<void> {
     (dbSteps ?? []).map((s) => [s.sort_order as number, s.id as string]),
   );
 
-  const items = template.steps.map((step) => ({
+  const items = steps.map((step) => ({
     case_id: created.id,
     template_step_id: stepIdByOrder.get(step.sort_order) ?? null,
     title: step.title,
@@ -136,7 +143,7 @@ export async function createCaseAction(formData: FormData): Promise<void> {
   const { controlUuid } = await import("@/lib/compliance/ids");
   const controlLinks: { checklist_item_id: string; control_id: string }[] = [];
   for (const row of insertedItems ?? []) {
-    const step = template.steps.find((s) => s.sort_order === row.sort_order);
+    const step = steps.find((s) => s.sort_order === row.sort_order);
     for (const ref of step?.controlRefs ?? []) {
       const uuid = controlUuid(ref);
       if (uuid) {

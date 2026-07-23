@@ -113,7 +113,7 @@ export async function ensureOrgMembershipAfterAuth(params: {
 
   const { error: orgError } = await supabase.rpc("bootstrap_organization", {
     p_name: orgNameForBootstrap(email, params.fullName),
-    p_stack: "hybrid",
+    p_stack: "m365",
     p_full_name: params.fullName,
     p_email: email,
   });

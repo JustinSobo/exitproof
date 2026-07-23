@@ -24,14 +24,14 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 - [x] **B5** Control mapping: curated FedRAMP/CMMC/800-53/800-171/SOC/ISO/HIPAA/CSF catalog; template `controlRefs` + `evidenceHint`; case snapshot; chips; framework-filtered PDF/CSV (`lib/compliance/`, migration `005`)
 - [ ] **B6** Audit completeness: events for case close, evidence download, settings changes, plan changes
 - [ ] **B7** Overdue notification dedupe (`notified_at`) — column added in 005; cron dedupe still open (Phase E)
-- [ ] **B8** Compliance posture page: per-org readiness summary (sampled-leaver evidence coverage %, avg time-to-revoke) — coverage helper ready; UI is Phase C
+- [x] **B8** Compliance posture page: per-org readiness summary via `computeCoverage` / `org-posture` + control glossary + “supports evidence for” disclaimer (`/compliance`); avg time-to-revoke still open
 
 ## Pillar C — Evidence questionnaire + customization (score 2)
 
-- [ ] **C1** Onboarding questionnaire wizard (~8 questions → tailored org template)
+- [x] **C1** Onboarding questionnaire wizard (~8 stack Qs + frameworks multi-select → `selected_frameworks` + stack_profile; Entra/M365 defaults; FedRAMP/CMMC evidence escalation on case create)
 - [ ] **C2** Template customizer: org-scoped editor (add/remove/reorder, critical + requires_evidence, due offsets)
 - [ ] **C3** Template versioning: record `template_version` on case snapshot
-- [ ] **C4** Re-run questionnaire from settings when stack changes; diff preview before applying
+- [x] **C4** Re-run questionnaire from settings (`/onboarding?edit=1`); diff preview before applying still open
 - [x] **C5** Per-step evidence type hints shown in checklist (template `evidenceHint` → `checklist_items.evidence_hint`); required-evidence validation still B1
 - [ ] **C6** Template import from CSV
 
@@ -59,7 +59,7 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 - [x] **F2** Empty states with guidance (dashboard, cases, clients)
 - [x] **F3** New-org onboarding checklist banner
 - [ ] **F4** Case detail evidence UX: previews, drag-drop upload, per-step progress — progressive disclosure + sticky progress shipped in Phase D; previews/drag-drop remain Phase E / B2
-- [ ] **F5** Dashboard insight cards: overdue criticals, evidence coverage, days-to-close trend
+- [x] **F5** Dashboard insight cards: overdue criticals, evidence coverage, days-to-close trend — Phase C: framework posture strip on dashboard; overdue/trend cards still open
 - [ ] **F6** Landing: downloadable sample Evidence Pack PDF
 - [ ] **F7** Accessibility pass: focus states, contrast, aria labels on checklist controls
 - [x] **F8** Case detail progressive UI: group by category, collapse done, sticky progress, control chips + framework export (Phase D)

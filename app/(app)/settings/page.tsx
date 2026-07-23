@@ -80,7 +80,7 @@ export default async function SettingsPage() {
             Frameworks & onboarding
           </h2>
           <Link
-            href="/onboarding"
+            href="/onboarding?edit=1"
             className="text-sm font-medium text-[var(--teal-bright)] hover:underline"
           >
             Re-run questionnaire
@@ -91,6 +91,14 @@ export default async function SettingsPage() {
             ? `Selected: ${selectedLabels.join(", ")}`
             : "No frameworks selected yet — complete onboarding to target FedRAMP, CMMC, SOC, and more."}
         </p>
+        {selected.has("fedramp") ||
+        selected.has("cmmc-l1") ||
+        selected.has("cmmc-l2") ? (
+          <p className="text-xs text-[var(--amber)]">
+            FedRAMP/CMMC selected — new cases escalate evidence-required on
+            mapped checklist steps.
+          </p>
+        ) : null}
         {ctx.org.onboarding_completed_at ? (
           <p className="text-xs text-[var(--fog)]">
             Onboarding completed{" "}

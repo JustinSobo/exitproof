@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { OnboardingBanner } from "@/components/app/onboarding-banner";
 import { signOutAction } from "@/lib/actions/auth";
 import { getCurrentOrg } from "@/lib/auth";
 import { isDemoMode } from "@/lib/env";
+import { needsOnboarding } from "@/lib/onboarding/questionnaire";
 
 /** Primary IA — New offboard is a Cases page CTA, not a nav item. */
 const links = [
@@ -22,6 +24,16 @@ export default async function AppLayout({
 }) {
   const ctx = await getCurrentOrg();
   if (!ctx) redirect("/auth/login");
+
+  const headerList = await headers();
+  const pathname = headerList.get("x-pathname") ?? "";
+  const onOnboarding =
+    pathname === "/onboarding" || pathname.startsWith("/onboarding/");
+
+  // New orgs must finish /onboarding; demo seed org already has onboarding_completed_at.
+  if (needsOnboarding(ctx.org) && !onOnboarding) {
+    redirect("/onboarding");
+  }
 
   return (
     <div className="ep-atmosphere min-h-screen text-[var(--mist)]">
@@ -95,7 +107,7 @@ export default async function AppLayout({
             </nav>
           </header>
           <main className="flex-1 px-4 py-6 md:px-8">
-            <OnboardingBanner org={ctx.org} />
+            {!onOnboarding ? <OnboardingBanner org={ctx.org} /> : null}
             {children}
           </main>
         </div>
