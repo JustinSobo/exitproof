@@ -47,6 +47,7 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 
 ## Pillar E — Roles, membership, tenancy (score 3–4)
 
+- [x] **E0** Microsoft Entra SSO via Supabase Azure provider; Microsoft-primary login/signup; callback org bootstrap / domain JIT join; demo hides Entra
 - [ ] **E1** Role enforcement (owner/admin vs member) on settings, billing, clients, deletions — server actions + RLS
 - [ ] **E2** Member invite flow + member list/remove UI in settings
 - [ ] **E3** Org switcher (multi-membership; `getCurrentOrg` takes first membership only)

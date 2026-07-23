@@ -21,6 +21,10 @@ export interface Organization {
   offboards_month_key: string;
   trial_offboards_used: number;
   created_at: string;
+  /** Framework slugs the org targets (FedRAMP, CMMC, SOC 2, …). */
+  selected_frameworks?: string[];
+  entra_tenant_id?: string | null;
+  onboarding_completed_at?: string | null;
 }
 
 export interface OrgMember {
@@ -40,6 +44,9 @@ export interface TemplateStep {
   requires_evidence: boolean;
   is_critical: boolean;
   category: string;
+  /** Control keys like `soc2:CC6.2` — see lib/compliance. */
+  controlRefs?: string[];
+  evidenceHint?: string;
 }
 
 export interface OffboardingTemplate {
@@ -82,6 +89,12 @@ export interface ChecklistItem {
   completed_by: string | null;
   sort_order: number;
   category: string;
+  /** Copied from template at case create. */
+  evidence_hint?: string | null;
+  /** Snapshot of control keys at case create (immutable for the case). */
+  control_refs?: string[];
+  /** Overdue notification dedupe (Phase E / B7). */
+  notified_at?: string | null;
 }
 
 export interface EvidenceFile {
@@ -93,6 +106,9 @@ export interface EvidenceFile {
   storage_path: string;
   uploaded_by: string;
   created_at: string;
+  content_hash?: string | null;
+  mime_type?: string | null;
+  byte_size?: number | null;
 }
 
 export interface AuditEvent {

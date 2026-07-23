@@ -65,6 +65,32 @@ export async function signUpAction(formData: FormData): Promise<void> {
   redirect("/dashboard");
 }
 
+export async function signInWithMicrosoftAction(
+  formData?: FormData,
+): Promise<void> {
+  const returnPath = String(formData?.get("return_to") || "/auth/login");
+  const failPath =
+    returnPath.startsWith("/auth/") ? returnPath.split("?")[0] : "/auth/login";
+
+  if (isDemoMode()) {
+    fail(failPath, "Microsoft sign-in is unavailable in demo mode.");
+  }
+
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "azure",
+    options: {
+      scopes: "email openid profile",
+      redirectTo: `${getAppUrl()}/auth/callback`,
+    },
+  });
+
+  if (error) fail(failPath, error.message);
+  if (!data.url) fail(failPath, "Failed to start Microsoft sign-in.");
+  redirect(data.url);
+}
+
 export async function signInAction(formData: FormData): Promise<void> {
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");

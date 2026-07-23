@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { getAppUrl } from "@/lib/env";
 
 export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -9,4 +10,16 @@ export function createClient() {
     );
   }
   return createBrowserClient(url, key);
+}
+
+/** Browser helper for Microsoft Entra (Azure) OAuth. Prefer the server action on login/signup pages. */
+export async function signInWithMicrosoft() {
+  const supabase = createClient();
+  return supabase.auth.signInWithOAuth({
+    provider: "azure",
+    options: {
+      scopes: "email openid profile",
+      redirectTo: `${getAppUrl()}/auth/callback`,
+    },
+  });
 }

@@ -38,15 +38,56 @@ Open [http://localhost:3000](http://localhost:3000).
    - `supabase/migrations/001_initial.sql`
    - `supabase/migrations/002_rls.sql`
    - `supabase/migrations/003_seed_templates.sql`
-3. Enable Email auth (password + magic link)
+   - `supabase/migrations/004_roles.sql`
+3. Enable Email auth (password + magic link) for break-glass / demo fallback
 4. Confirm Storage bucket `evidence` exists (created in `001_initial.sql`)
 5. Set env vars:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-6. Set `DEMO_MODE=false` (or omit it) once Supabase is configured
+   - `SUPABASE_SERVICE_ROLE_KEY` (also required for Entra domain JIT join)
+6. Under **Authentication → URL configuration**, add redirect URL:
+   - `https://<your-app>/auth/callback` (and `http://localhost:3000/auth/callback` for local)
+7. Set `DEMO_MODE=false` (or omit it) once Supabase is configured
 
-### 2. Stripe
+### 2. Microsoft Entra SSO (Azure provider)
+
+Primary production login is **Continue with Microsoft** (`signInWithOAuth({ provider: 'azure' })`). Email/password and magic link stay as break-glass. Entra UI is hidden when `isDemoMode()` is true.
+
+**A. Register an app in Microsoft Entra ID**
+
+1. [Entra admin center](https://entra.microsoft.com) → **App registrations** → **New registration**
+2. Name: `ExitProof` (or your deployment name)
+3. Supported account types:
+   - Multi-tenant (`accounts in any organizational directory`) for SaaS signup across customer tenants, **or**
+   - Single-tenant if ExitProof is only for one Entra tenant
+4. Redirect URI (Web): `https://<project-ref>.supabase.co/auth/v1/callback`  
+   (Supabase completes the IdP handshake; the app then lands on `/auth/callback`)
+5. **Certificates & secrets** → create a client secret; copy the **Value** once
+6. Note **Application (client) ID** and **Directory (tenant) ID**
+7. **API permissions** → Microsoft Graph delegated: `openid`, `email`, `profile` (and `User.Read` if prompted). Grant admin consent if required
+8. Optional (recommended): **Token configuration** → add optional claim `email` on the ID token so Supabase always receives a verified email
+
+**B. Enable Azure in Supabase Auth**
+
+1. Supabase Dashboard → **Authentication** → **Providers** → **Azure**
+2. Enable the provider
+3. Paste **Client ID** and **Client Secret** from Entra (secrets live only here — not in `.env`)
+4. Tenant URL:
+   - Single-tenant: `https://login.microsoftonline.com/<tenant-id>`
+   - Multi-tenant SaaS: `https://login.microsoftonline.com/common` (or `/organizations`)
+5. Save
+
+**C. App behavior (already wired)**
+
+- Scopes: `email openid profile`
+- After `exchangeCodeForSession` on `/auth/callback`, users with no membership are either:
+  - **Domain JIT joined** as `member` when exactly one existing org has members on the same work email domain (requires `SUPABASE_SERVICE_ROLE_KEY`), or
+  - **Bootstrapped** as owner of a new trial org via `bootstrap_organization`
+- Consumer domains (gmail, outlook, etc.) never auto-join
+
+**Out of scope for this phase:** SCIM, custom SAML apps, Entra group → ExitProof role sync.
+
+### 3. Stripe
 
 1. Create products/prices:
    - Team — $79/mo → `STRIPE_PRICE_TEAM`
@@ -58,13 +99,13 @@ Open [http://localhost:3000](http://localhost:3000).
    - Set `STRIPE_WEBHOOK_SECRET`
 4. Enable Customer Portal in Stripe Dashboard
 
-### 3. Resend
+### 4. Resend
 
 1. Create an API key at [resend.com](https://resend.com)
 2. Set `RESEND_API_KEY` and optionally `RESEND_FROM_EMAIL`
 3. If unset, overdue emails log to the server console and no-op (safe for local/dev)
 
-### 4. Overdue email cron
+### 5. Overdue email cron
 
 Route: `GET|POST /api/cron/overdue`
 
@@ -76,7 +117,7 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://your-domain/api/cron/overdu
 
 `vercel.json` schedules daily `0 14 * * *` (14:00 UTC). On Vercel, also set `CRON_SECRET` and configure the cron Authorization header, or rely on Vercel Cron + your own secret check in the route.
 
-### 5. Deploy (Vercel)
+### 6. Deploy (Vercel)
 
 ```bash
 vercel
