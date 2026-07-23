@@ -1,6 +1,6 @@
 # ExitProof × GridLogic — Product & Security Charter
 
-**Status:** Active (Phase 0 complete — foundation docs)  
+**Status:** Active (Phases 0–6 in-repo complete; live Azure pen-test / deploy still open)  
 **Owner:** GridLogic IT / ExitProof product  
 **Last updated:** 2026-07-23
 
@@ -266,5 +266,10 @@ Commercial ops: PSA/CRM ticket templates, SOW language, RACI (GridLogic vs custo
 | [adr/002-graph-readonly-and-ad-connector.md](adr/002-graph-readonly-and-ad-connector.md) | Graph RO + Hybrid Connector; no write until Phase 7 |
 | [adr/003-graph-write-path-deferred.md](adr/003-graph-write-path-deferred.md) | Phase 7 Graph write/disable deferred; criteria to open future charter |
 | [security/threat-model.md](security/threat-model.md) | STRIDE multi-tenant + connectors; evidence = Restricted |
+| [security/secret-scanning.md](security/secret-scanning.md) | CI, Dependabot, secret scanning notes (Phase 6) |
+| [security/dr-runbook.md](security/dr-runbook.md) | RPO/RTO, restore, tenant wipe/offboard |
+| [security/key-rotation.md](security/key-rotation.md) | Key rotation + AD cert revoke drills |
+| [security/kill-switch.md](security/kill-switch.md) | Per-tenant freeze logins / disable connectors |
+| [security/soc2-readiness.md](security/soc2-readiness.md) | Platform SOC 2 readiness stub for GridLogic hosting |
 | [commercial/skus.md](commercial/skus.md) | Standard / Dedicated / add-ons |
 | [commercial/dpa-notes.md](commercial/dpa-notes.md) | DPA / admin consent / subprocessor checklist for counsel |

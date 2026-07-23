@@ -251,6 +251,74 @@ export async function clearOperatorTenantAction(): Promise<void> {
   redirect("/operator");
 }
 
+/** Phase 6: freeze logins and/or disable connectors for a tenant (IR kill switch). */
+export async function setTenantKillSwitchAction(
+  formData: FormData,
+): Promise<void> {
+  let ctx;
+  try {
+    ctx = await requireOperator();
+  } catch (e) {
+    operatorError(
+      "/operator",
+      e instanceof Error ? e.message : "Operator required",
+    );
+  }
+
+  const orgId = String(formData.get("org_id") || "").trim();
+  const ticketId = String(formData.get("ticket_id") || "").trim();
+  const loginFrozen = formData.get("login_frozen") === "on";
+  const connectorsDisabled = formData.get("connectors_disabled") === "on";
+
+  if (!orgId) operatorError("/operator", "Missing org.");
+  if (!ticketId) {
+    operatorError(
+      `/operator/tenants/${orgId}`,
+      "Ticket ID required for kill-switch changes.",
+    );
+  }
+
+  const org = await getOperatorOrg(orgId);
+  if (!org) operatorError("/operator", "Tenant not found.");
+
+  if (isDemoMode()) {
+    demoStore.updateOrg(org.id, {
+      login_frozen: loginFrozen,
+      connectors_disabled: connectorsDisabled,
+    });
+  } else {
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("organizations")
+      .update({
+        login_frozen: loginFrozen,
+        connectors_disabled: connectorsDisabled,
+      })
+      .eq("id", org.id);
+    if (error) {
+      operatorError(`/operator/tenants/${org.id}`, error.message);
+    }
+  }
+
+  await writeAudit({
+    orgId: org.id,
+    actorId: ctx.user.id,
+    actorEmail: ctx.user.email,
+    eventType: "operator.kill_switch",
+    payload: {
+      tenant_id: tenantIdOf(org),
+      ticket_id: ticketId,
+      login_frozen: loginFrozen,
+      connectors_disabled: connectorsDisabled,
+    },
+  });
+
+  revalidatePath("/operator");
+  revalidatePath(`/operator/tenants/${org.id}`);
+  redirect(`/operator/tenants/${org.id}?kill_switch=1`);
+}
+
 /**
  * GridLogic-driven customer onboard: create tenant, SSO flag, frameworks, invite owner.
  */

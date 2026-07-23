@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { attachAdAutoEvidence } from "@/lib/connectors/ad-auto-evidence";
-import { getCurrentOrg } from "@/lib/auth";
+import { getCurrentOrg, sessionTenantId } from "@/lib/auth";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
+import {
+  areConnectorsDisabled,
+  CONNECTORS_DISABLED_MESSAGE,
+} from "@/lib/security/kill-switch";
 
 /**
  * POST /api/connectors/ad/auto-evidence
@@ -22,6 +26,18 @@ export async function POST(request: Request) {
   const ctx = await getCurrentOrg();
   if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (areConnectorsDisabled(ctx.org)) {
+    return NextResponse.json(
+      {
+        error: CONNECTORS_DISABLED_MESSAGE,
+        stop: true,
+        kill_switch: "connectors_disabled",
+        tenant_id: sessionTenantId(ctx.org),
+      },
+      { status: 403 },
+    );
   }
 
   let json: unknown;

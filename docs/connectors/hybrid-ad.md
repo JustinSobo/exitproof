@@ -55,7 +55,7 @@ Platform validates thumbprint + token hash against `ad_connectors` for the **reg
 4. **Rotate** — issue new cert, register, retire old thumbprint
 5. **Revoke** — set `ad_connectors.status = revoked` + `revoked_at`; heartbeats return `403` with `{ "stop": true }`; agent must exit within the next heartbeat interval (target ≤5 minutes)
 
-Revoking the cert in Key Vault / CA + DB row is mandatory for incident response.
+Revoking the cert in Key Vault / CA + DB row is mandatory for incident response. Ops drill checklist: [key-rotation.md](../security/key-rotation.md). Tenant-wide freeze: [kill-switch.md](../security/kill-switch.md).
 
 ## OU scope
 

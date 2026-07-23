@@ -62,6 +62,8 @@ ALLOW_DOMAIN_JIT=false   # default; never enable with GRIDLOGIC_MANAGED
    - `supabase/migrations/007_graph_connector.sql` ← Graph consent (Phase 3)
    - `supabase/migrations/008_operator_jit.sql` ← operator staff + JIT grants (Phase 2)
    - `supabase/migrations/009_ad_connector.sql` ← Hybrid AD (Phase 4)
+   - `supabase/migrations/010_auto_evidence_policy.sql` ← auto-evidence policy (Phase 5)
+   - `supabase/migrations/011_kill_switch.sql` ← login freeze / connectors disable (Phase 6)
 3. Enable Email auth (password + magic link) for break-glass / demo fallback
 4. Confirm Storage bucket `evidence` exists (created in `001_initial.sql`)
 5. Set env vars:
@@ -237,6 +239,8 @@ Set all env vars from `.env.example`. Set `NEXT_PUBLIC_APP_URL` to your producti
 - `lib/connectors/ad.ts` — Hybrid AD mismatch + snapshot helpers (Phase 4)
 - `apps/connector/` — outbound Hybrid Connector skeleton (mock AD for CI)
 - `docs/connectors/hybrid-ad.md` — mTLS / OU / revoke protocol
+- `docs/security/` — threat model, DR, key rotation, kill switch, SOC 2 stub, secret scanning (Phase 6)
+- `.github/workflows/ci.yml` — lint + typecheck + test + build
 - `supabase/migrations/*` — schema, RLS, seeds
 - `infra/*` — Azure Bicep spine (Phase 1 stubs)
 - `scripts/provision-customer.ts` — GridLogic provision checklist CLI

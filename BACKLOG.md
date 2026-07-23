@@ -61,7 +61,8 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 - [x] **H3** Phase 3: Graph read-only connector + consent (`lib/connectors/graph/`, `/connectors`, migration `007_graph_connector.sql`, case Entra mismatch + optional auto-evidence)
 - [x] **H4** Phase 4 foundation: Hybrid AD connector skeleton (`apps/connector`), protocol docs, register/heartbeat/snapshot APIs, case AD status + mismatch UI, migration `009_ad_connector.sql`
 - [x] **H5** Phase 5: auto-evidence policies (`lib/evidence/`), Graph/AD → FedRAMP/CMMC auto-map, attest-on-critical, Evidence Pack v3 system vs human sections, migration `010_auto_evidence_policy.sql`, DEMO Jordan Lee
-- [ ] **H6** Live Azure deploy (Container Apps + SQL + Blob + KV) beyond Bicep stubs
+- [x] **H6a** Phase 6 in-repo hardening: CI workflow, Dependabot, DR/key-rotation/SOC2/kill-switch docs, `login_frozen` + `connectors_disabled` (migration `011`)
+- [ ] **H6** Live Azure deploy (Container Apps + SQL + Blob + KV) beyond Bicep stubs; live pen-test engagement
 - [~] **H7** Phase 7 Graph write/disable — **deferred** to future charter ([ADR-003](docs/adr/003-graph-write-path-deferred.md)); dual-control only after RO trust; out of scope for Phases 0–6 (do not implement)
 
 ## Pillar F — UX/UI (score 1)
@@ -82,6 +83,6 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 
 - [x] **G1** Vitest for crosswalk/coverage/hash/roles (`lib/compliance/coverage.test.ts`); broader gate/webhook coverage still open
 - [ ] **G2** Integration: export/cron auth, Stripe fixture round-trip
-- [ ] **G3** GitHub Actions: lint + typecheck + test + build on PR
+- [x] **G3** GitHub Actions: lint + typecheck + test + build on PR/push to main (`.github/workflows/ci.yml`)
 - [ ] **G4** Cleanup: unused `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, default Next SVGs, empty component dirs; wire `zod`
 - [x] **G5** Hide marketing “Try demo” CTAs when `isDemoMode()` is false (gated in marketing layout + landing; action already guarded by D5)

@@ -4,6 +4,10 @@ import { getCurrentOrg, getSessionUser } from "@/lib/auth";
 import { isDemoMode } from "@/lib/env";
 import { isOperatorUser } from "@/lib/operator/auth";
 import { needsOnboarding } from "@/lib/onboarding/questionnaire";
+import {
+  isLoginFrozen,
+  LOGIN_FROZEN_MESSAGE,
+} from "@/lib/security/kill-switch";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -33,6 +37,13 @@ export default async function AppLayout({
   }
 
   const showOperator = await isOperatorUser(ctx.user);
+
+  // Phase 6 kill switch: freeze customer workspace; operators keep /operator.
+  if (isLoginFrozen(ctx.org) && !showOperator) {
+    redirect(
+      `/auth/login?error=${encodeURIComponent(LOGIN_FROZEN_MESSAGE)}`,
+    );
+  }
 
   const headerList = await headers();
   const pathname = headerList.get("x-pathname") ?? "";

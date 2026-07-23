@@ -17,6 +17,10 @@ import {
 } from "@/lib/auth";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
+import {
+  areConnectorsDisabled,
+  CONNECTORS_DISABLED_MESSAGE,
+} from "@/lib/security/kill-switch";
 import type { GraphConsentStatus } from "@/lib/types";
 
 function revalidateConnectors() {
@@ -219,6 +223,9 @@ export async function refreshCaseDirectorySnapshotAction(
 }> {
   try {
     const ctx = await requireOrg();
+    if (areConnectorsDisabled(ctx.org)) {
+      return { error: CONNECTORS_DISABLED_MESSAGE };
+    }
     const tenantId = sessionTenantId(ctx.org);
     const consent =
       ctx.org.graph_consent_status ?? ("not_started" as GraphConsentStatus);

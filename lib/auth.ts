@@ -101,6 +101,8 @@ export function normalizeOrganization(raw: Record<string, unknown>): Organizatio
     // Default ON when column absent (Phase 5 attest-on-critical).
     require_human_attest_on_critical:
       raw.require_human_attest_on_critical !== false,
+    login_frozen: Boolean(raw.login_frozen),
+    connectors_disabled: Boolean(raw.connectors_disabled),
   };
 }
 

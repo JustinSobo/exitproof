@@ -60,6 +60,15 @@ export interface Organization {
    * done on system-collected evidence alone — human file or ticket required.
    */
   require_human_attest_on_critical?: boolean;
+  /**
+   * Phase 6 kill switch: freeze customer workspace logins (operators still use /operator).
+   * @see docs/security/kill-switch.md
+   */
+  login_frozen?: boolean;
+  /**
+   * Phase 6 kill switch: refuse Graph sync / Hybrid AD agent work for this tenant.
+   */
+  connectors_disabled?: boolean;
 }
 
 export type {

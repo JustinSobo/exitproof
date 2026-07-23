@@ -116,7 +116,7 @@ Do **not** claim FedRAMP ATO for ExitProof platform unless a separate program co
 
 - [ ] Notification timeline to customer: `_TBD_` (align with applicable law)
 - [ ] GridLogic incident contact: `_TBD_`
-- [ ] Per-tenant kill switch (disable connectors + freeze logins) — engineering capability to reference in IR plan
+- [x] Per-tenant kill switch (disable connectors + freeze logins) — see `docs/security/kill-switch.md` + migration `011`
 
 ---
 

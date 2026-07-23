@@ -7,6 +7,7 @@ import {
 } from "@/lib/connectors/ad-auth";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
+import { assertConnectorsEnabledForTenant } from "@/lib/security/tenant-kill-switch";
 
 /**
  * POST /api/connectors/ad/heartbeat
@@ -47,6 +48,11 @@ export async function POST(request: Request) {
       { error: "Invalid body", details: parsed.error.flatten() },
       { status: 400 },
     );
+  }
+
+  const kill = await assertConnectorsEnabledForTenant(parsed.data.tenant_id);
+  if (!kill.ok) {
+    return NextResponse.json(kill.body, { status: 403 });
   }
 
   if (isDemoMode()) {

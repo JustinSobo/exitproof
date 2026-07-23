@@ -26,11 +26,15 @@ function stash() {
   for (const k of KEYS) saved[k] = process.env[k];
 }
 
+function setEnv(key: (typeof KEYS)[number], value: string | undefined) {
+  const env = process.env as Record<string, string | undefined>;
+  if (value === undefined) delete env[key];
+  else env[key] = value;
+}
+
 function restore() {
   for (const k of KEYS) {
-    const v = saved[k];
-    if (v === undefined) delete process.env[k];
-    else process.env[k] = v;
+    setEnv(k, saved[k]);
   }
 }
 
@@ -41,31 +45,31 @@ afterEach(() => {
 describe("isDemoMode footgun", () => {
   it("uses missing keys as demo in development", () => {
     stash();
-    process.env.NODE_ENV = "development";
-    delete process.env.DEMO_MODE;
-    delete process.env.GRIDLOGIC_MANAGED;
-    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
-    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    delete process.env.NEXT_PHASE;
+    setEnv("NODE_ENV", "development");
+    setEnv("DEMO_MODE", undefined);
+    setEnv("GRIDLOGIC_MANAGED", undefined);
+    setEnv("NEXT_PUBLIC_SUPABASE_URL", undefined);
+    setEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", undefined);
+    setEnv("NEXT_PHASE", undefined);
     expect(isDemoMode()).toBe(true);
   });
 
   it("does not auto-demo from missing keys at production runtime", () => {
     stash();
-    process.env.NODE_ENV = "production";
-    delete process.env.DEMO_MODE;
-    delete process.env.GRIDLOGIC_MANAGED;
-    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
-    delete process.env.NEXT_PHASE;
+    setEnv("NODE_ENV", "production");
+    setEnv("DEMO_MODE", undefined);
+    setEnv("GRIDLOGIC_MANAGED", undefined);
+    setEnv("NEXT_PUBLIC_SUPABASE_URL", undefined);
+    setEnv("NEXT_PHASE", undefined);
     expect(isDemoMode()).toBe(false);
   });
 
   it("still allows missing-keys demo during next build phase", () => {
     stash();
-    process.env.NODE_ENV = "production";
-    process.env.NEXT_PHASE = "phase-production-build";
-    delete process.env.DEMO_MODE;
-    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    setEnv("NODE_ENV", "production");
+    setEnv("NEXT_PHASE", "phase-production-build");
+    setEnv("DEMO_MODE", undefined);
+    setEnv("NEXT_PUBLIC_SUPABASE_URL", undefined);
     expect(isDemoMode()).toBe(true);
   });
 });
@@ -73,30 +77,30 @@ describe("isDemoMode footgun", () => {
 describe("assertManagedRuntimeEnv", () => {
   it("refuses DEMO_MODE under GRIDLOGIC_MANAGED", () => {
     stash();
-    delete process.env.NEXT_PHASE;
-    process.env.GRIDLOGIC_MANAGED = "true";
-    process.env.DEMO_MODE = "true";
-    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon";
+    setEnv("NEXT_PHASE", undefined);
+    setEnv("GRIDLOGIC_MANAGED", "true");
+    setEnv("DEMO_MODE", "true");
+    setEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    setEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
     expect(() => assertManagedRuntimeEnv()).toThrow(/DEMO_MODE/);
   });
 
   it("refuses missing supabase under production", () => {
     stash();
-    delete process.env.NEXT_PHASE;
-    process.env.NODE_ENV = "production";
-    delete process.env.DEMO_MODE;
-    delete process.env.GRIDLOGIC_MANAGED;
-    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
-    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    setEnv("NEXT_PHASE", undefined);
+    setEnv("NODE_ENV", "production");
+    setEnv("DEMO_MODE", undefined);
+    setEnv("GRIDLOGIC_MANAGED", undefined);
+    setEnv("NEXT_PUBLIC_SUPABASE_URL", undefined);
+    setEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", undefined);
     expect(() => assertManagedRuntimeEnv()).toThrow(/SUPABASE|demo-if-missing/i);
   });
 
   it("no-ops during production build", () => {
     stash();
-    process.env.NEXT_PHASE = "phase-production-build";
-    process.env.NODE_ENV = "production";
-    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    setEnv("NEXT_PHASE", "phase-production-build");
+    setEnv("NODE_ENV", "production");
+    setEnv("NEXT_PUBLIC_SUPABASE_URL", undefined);
     expect(() => assertManagedRuntimeEnv()).not.toThrow();
   });
 });
@@ -104,12 +108,12 @@ describe("assertManagedRuntimeEnv", () => {
 describe("domain JIT", () => {
   it("defaults off and stays off under GridLogic", () => {
     stash();
-    delete process.env.ALLOW_DOMAIN_JIT;
-    delete process.env.GRIDLOGIC_MANAGED;
+    setEnv("ALLOW_DOMAIN_JIT", undefined);
+    setEnv("GRIDLOGIC_MANAGED", undefined);
     expect(isDomainJitAllowed()).toBe(false);
 
-    process.env.ALLOW_DOMAIN_JIT = "true";
-    process.env.GRIDLOGIC_MANAGED = "true";
+    setEnv("ALLOW_DOMAIN_JIT", "true");
+    setEnv("GRIDLOGIC_MANAGED", "true");
     expect(isGridLogicManaged()).toBe(true);
     expect(isDomainJitAllowed()).toBe(false);
   });

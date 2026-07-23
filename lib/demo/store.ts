@@ -131,6 +131,8 @@ function seedDemoIfNeeded(state: DemoState) {
     hybrid_ad_enabled: true,
     ad_auto_evidence_enabled: true,
     require_human_attest_on_critical: true,
+    login_frozen: false,
+    connectors_disabled: false,
   };
   state.orgs.push(org);
   state.members.push({
@@ -177,6 +179,8 @@ function seedDemoIfNeeded(state: DemoState) {
     hybrid_ad_enabled: false,
     ad_auto_evidence_enabled: false,
     require_human_attest_on_critical: true,
+    login_frozen: false,
+    connectors_disabled: false,
   };
   state.orgs.push(contoso);
 
@@ -608,6 +612,8 @@ export const demoStore = {
         | "hybrid_ad_enabled"
         | "ad_auto_evidence_enabled"
         | "require_human_attest_on_critical"
+        | "login_frozen"
+        | "connectors_disabled"
       >
     >,
   ) {
@@ -1464,6 +1470,14 @@ export const demoStore = {
     return org ? normalizeMonthlyUsage(org) : null;
   },
 
+  getOrgByTenantId(tenantId: string): Organization | null {
+    const org =
+      getState().orgs.find(
+        (o) => (o.tenant_id ?? o.id) === tenantId,
+      ) ?? null;
+    return org ? normalizeMonthlyUsage(org) : null;
+  },
+
   listJitGrantsForStaff(staffUserId: string): JitAccessGrant[] {
     const state = getState();
     const now = new Date();
@@ -1573,6 +1587,8 @@ export const demoStore = {
       hybrid_ad_enabled: false,
       ad_auto_evidence_enabled: false,
       require_human_attest_on_critical: true,
+      login_frozen: false,
+      connectors_disabled: false,
     };
     state.orgs.push(org);
 

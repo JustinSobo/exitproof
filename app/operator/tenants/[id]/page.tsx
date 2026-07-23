@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import {
   requestJitAccessAction,
   revokeJitAccessAction,
+  setTenantKillSwitchAction,
   switchOperatorTenantAction,
 } from "@/lib/actions/operator";
 import {
@@ -13,6 +14,7 @@ import {
 import { tenantHealthFromOrg } from "@/lib/operator/health";
 import { isGrantActive } from "@/lib/operator/jit";
 import { DEFAULT_JIT_HOURS } from "@/lib/operator/types";
+import { isKillSwitchActive } from "@/lib/security/kill-switch";
 import { tenantIdOf } from "@/lib/tenancy";
 
 export const metadata = { title: "Tenant · Operator" };
@@ -27,6 +29,7 @@ export default async function OperatorTenantPage({
     jit?: string;
     revoked?: string;
     onboarded?: string;
+    kill_switch?: string;
   }>;
 }) {
   let user;
@@ -88,6 +91,11 @@ export default async function OperatorTenantPage({
           JIT access revoked.
         </div>
       ) : null}
+      {q.kill_switch ? (
+        <div className="rounded-xl border border-[var(--teal)]/40 bg-[var(--teal)]/10 px-4 py-3 text-sm">
+          Kill-switch flags saved and audited.
+        </div>
+      ) : null}
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-white">Connector health</h2>
@@ -117,6 +125,63 @@ export default async function OperatorTenantPage({
             {(org.selected_frameworks ?? []).join(", ") || "none"}
           </span>
         </p>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-white">
+          Incident kill switch
+        </h2>
+        <p className="text-sm text-[var(--fog)]">
+          Freeze customer workspace logins and/or disable Graph + Hybrid AD
+          connectors for this tenant only. See{" "}
+          <code className="text-[var(--mist)]">docs/security/kill-switch.md</code>
+          .
+        </p>
+        {isKillSwitchActive(org) ? (
+          <div className="rounded-xl border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-4 py-3 text-sm">
+            Active — login_frozen={String(Boolean(org.login_frozen))} ·
+            connectors_disabled={String(Boolean(org.connectors_disabled))}
+          </div>
+        ) : (
+          <p className="text-xs text-[var(--fog)]">No kill-switch flags set.</p>
+        )}
+        <form
+          action={setTenantKillSwitchAction}
+          className="max-w-md space-y-3 rounded-xl border border-[var(--line)] px-4 py-4"
+        >
+          <input type="hidden" name="org_id" value={org.id} />
+          <label className="flex items-center gap-2 text-sm text-[var(--mist)]">
+            <input
+              type="checkbox"
+              name="login_frozen"
+              defaultChecked={Boolean(org.login_frozen)}
+            />
+            Freeze customer logins
+          </label>
+          <label className="flex items-center gap-2 text-sm text-[var(--mist)]">
+            <input
+              type="checkbox"
+              name="connectors_disabled"
+              defaultChecked={Boolean(org.connectors_disabled)}
+            />
+            Disable connectors
+          </label>
+          <label className="block text-sm">
+            <span className="text-[var(--fog)]">Ticket ID</span>
+            <input
+              name="ticket_id"
+              required
+              placeholder="IR / PSA ticket"
+              className="mt-1 w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-white"
+            />
+          </label>
+          <button
+            type="submit"
+            className="rounded-md bg-[var(--teal)] px-4 py-2 text-sm font-semibold text-[#04201d]"
+          >
+            Save kill switch
+          </button>
+        </form>
       </section>
 
       <section className="space-y-4">

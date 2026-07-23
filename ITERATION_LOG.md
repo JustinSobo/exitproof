@@ -2,6 +2,7 @@
 
 | Date | Item | Summary | Verification | Follow-ups |
 | --- | --- | --- | --- | --- |
+| 2026-07-23 | Phase 6 / Platform hardening | CI (`.github/workflows/ci.yml`); Dependabot; docs: secret-scanning, DR RPO/RTO, key-rotation + AD cert revoke, SOC2 stub, kill-switch; flags `login_frozen`/`connectors_disabled` (migration `011`) + operator UI | `npm test` + `npm run lint` + `npm run build` | Live Azure pen-test; DR drill on deployed stack; H6 deploy |
 | 2026-07-23 | Phase 7 / Graph write deferred | Documented Graph write/disable as future charter only ([ADR-003](docs/adr/003-graph-write-path-deferred.md)); dual-control after RO trust; out of scope Phases 0–6; pointers in CHARTER + ADR-002; backlog H7 deferred | Docs-only review | Open Phase 7 charter only when ADR-003 acceptance criteria met |
 | 2026-07-23 | Phase 5 / Auto-evidence | Per-framework Graph/AD→FedRAMP/CMMC auto-map (`lib/evidence/`); `require_human_attest_on_critical` (default on); Evidence Pack v3 System-collected vs Human-attached + retention note; migration `010`; DEMO Jordan Lee seeds system evidence with pending criticals | `npm test` + `npm run lint` + `npm run build` | Live blob attach polish; Phase 6 hardening |
 | 2026-07-23 | UX / F7+F11 | Shared `components/ui` (button/field/badge/alert/empty/page-header); app shell grouped nav + mobile drawer; marketing/auth polish; core flows + case detail progressive UX kept; focus rings | `npm run lint` + `npm run build` | F6 sample PDF; deeper a11y audit |

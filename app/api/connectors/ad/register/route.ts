@@ -6,6 +6,7 @@ import {
 } from "@/lib/connectors/ad-auth";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
+import { assertConnectorsEnabledForTenant } from "@/lib/security/tenant-kill-switch";
 
 /**
  * POST /api/connectors/ad/register
@@ -58,6 +59,11 @@ export async function POST(request: Request) {
 
   if (!authorizeProvision(request, parsed.data.provision_secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const kill = await assertConnectorsEnabledForTenant(parsed.data.tenant_id);
+  if (!kill.ok) {
+    return NextResponse.json(kill.body, { status: 403 });
   }
 
   if (parsed.data.tenant_id !== parsed.data.org_id && !isDemoMode()) {
