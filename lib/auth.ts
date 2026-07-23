@@ -59,8 +59,21 @@ export async function getCurrentOrg(): Promise<{
 
   return {
     user,
-    org: org as Organization,
+    org: normalizeOrganization(org),
     member: member as OrgMember,
+  };
+}
+
+/** Fill Phase A columns when reading orgs created before migration 005. */
+export function normalizeOrganization(raw: Record<string, unknown>): Organization {
+  return {
+    ...(raw as unknown as Organization),
+    selected_frameworks: Array.isArray(raw.selected_frameworks)
+      ? (raw.selected_frameworks as string[])
+      : [],
+    entra_tenant_id: (raw.entra_tenant_id as string | null) ?? null,
+    onboarding_completed_at:
+      (raw.onboarding_completed_at as string | null) ?? null,
   };
 }
 

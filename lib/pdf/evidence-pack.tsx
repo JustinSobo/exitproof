@@ -5,6 +5,14 @@ import {
   View,
   StyleSheet,
 } from "@react-pdf/renderer";
+import {
+  computeCoverage,
+  filterItemsByFramework,
+  filterRefsByFramework,
+  getFramework,
+  resolveControlRefs,
+  type ExportFrameworkFilter,
+} from "@/lib/compliance";
 import type {
   AuditEvent,
   ChecklistItem,
@@ -66,6 +74,11 @@ const styles = StyleSheet.create({
     color: "#3D5A68",
     fontSize: 9,
   },
+  disclaimer: {
+    color: "#6B8794",
+    fontSize: 8,
+    marginTop: 8,
+  },
   footer: {
     position: "absolute",
     bottom: 30,
@@ -85,6 +98,7 @@ export type EvidencePackProps = {
   evidence: EvidenceFile[];
   audits: AuditEvent[];
   generatedAt: string;
+  framework?: ExportFrameworkFilter;
 };
 
 export function EvidencePackDocument({
@@ -94,14 +108,24 @@ export function EvidencePackDocument({
   evidence,
   audits,
   generatedAt,
+  framework = "all",
 }: EvidencePackProps) {
-  const done = items.filter((i) => i.status === "done").length;
+  const filteredItems = filterItemsByFramework(items, framework);
+  const coverage = computeCoverage({ items, evidence, framework });
+  const done = filteredItems.filter((i) => i.status === "done").length;
+  const fwLabel =
+    framework === "all"
+      ? "All frameworks"
+      : (getFramework(framework)?.name ?? framework);
+  const selectedFw = org.selected_frameworks ?? [];
+  const selected = selectedFw.length > 0 ? selectedFw.join(", ") : "—";
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         <Text style={styles.brand}>ExitProof</Text>
         <Text style={styles.subtitle}>
-          Evidence Pack — audit-ready IT offboarding record
+          Evidence Pack — audit-ready IT offboarding record ({fwLabel})
         </Text>
 
         <View style={styles.section}>
@@ -125,42 +149,103 @@ export function EvidencePackDocument({
             <Text style={styles.value}>{offboardingCase.template_name}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>Due date</Text>
+            <Text style={styles.label}>Org frameworks</Text>
+            <Text style={styles.value}>{selected}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Pack view</Text>
+            <Text style={styles.value}>{fwLabel}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Window</Text>
             <Text style={styles.value}>
-              {offboardingCase.due_date || "—"}
+              {offboardingCase.created_at}
+              {offboardingCase.closed_at
+                ? ` → ${offboardingCase.closed_at}`
+                : " → open"}
             </Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Progress</Text>
             <Text style={styles.value}>
-              {done} / {items.length} steps complete
+              {done} / {filteredItems.length} steps in view
             </Text>
           </View>
+          <Text style={styles.disclaimer}>
+            Supports evidence for listed controls — does not guarantee
+            certification or FedRAMP authorization of ExitProof as a CSP.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.h2}>Control coverage matrix</Text>
+          {coverage.rows.length === 0 ? (
+            <Text style={styles.meta}>No controls in this view.</Text>
+          ) : (
+            coverage.rows.map((row) => (
+              <Text key={row.control.key} style={styles.meta}>
+                [{row.status.toUpperCase()}] {row.control.framework}{" "}
+                {row.control.controlId} — {row.control.title} ·{" "}
+                {row.doneCount}/{row.totalItems} steps · {row.evidenceCount}{" "}
+                evidence file(s)
+              </Text>
+            ))
+          )}
+          <Text style={styles.meta}>
+            Summary: {coverage.covered} covered · {coverage.partial} partial ·{" "}
+            {coverage.open} open ({coverage.total} controls)
+          </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.h2}>Checklist</Text>
-          {items.map((item) => (
-            <View key={item.id} style={styles.item} wrap={false}>
-              <Text style={styles.itemTitle}>
-                [{item.status.toUpperCase()}] {item.title}
-                {item.is_critical ? " ★ CRITICAL" : ""}
-                {item.requires_evidence ? " · evidence required" : ""}
-              </Text>
-              <Text style={styles.meta}>{item.description}</Text>
-              {item.notes ? (
-                <Text style={styles.meta}>Notes: {item.notes}</Text>
-              ) : null}
-              {item.ticket_url ? (
-                <Text style={styles.meta}>Ticket: {item.ticket_url}</Text>
-              ) : null}
-              {item.completed_at ? (
-                <Text style={styles.meta}>
-                  Completed {item.completed_at} by {item.completed_by}
+          {filteredItems.map((item) => {
+            const refs = filterRefsByFramework(
+              item.control_refs ?? [],
+              framework,
+            );
+            const labels = resolveControlRefs(refs)
+              .map((c) => c.controlId)
+              .join(", ");
+            const files = evidence.filter(
+              (e) => e.checklist_item_id === item.id,
+            );
+            return (
+              <View key={item.id} style={styles.item} wrap={false}>
+                <Text style={styles.itemTitle}>
+                  [{item.status.toUpperCase()}] {item.title}
+                  {item.is_critical ? " ★ CRITICAL" : ""}
+                  {item.requires_evidence ? " · evidence required" : ""}
                 </Text>
-              ) : null}
-            </View>
-          ))}
+                <Text style={styles.meta}>{item.description}</Text>
+                {labels ? (
+                  <Text style={styles.meta}>Controls: {labels}</Text>
+                ) : null}
+                {item.evidence_hint ? (
+                  <Text style={styles.meta}>
+                    Evidence hint: {item.evidence_hint}
+                  </Text>
+                ) : null}
+                {item.notes ? (
+                  <Text style={styles.meta}>Notes: {item.notes}</Text>
+                ) : null}
+                {item.ticket_url ? (
+                  <Text style={styles.meta}>Ticket: {item.ticket_url}</Text>
+                ) : null}
+                {files.map((f) => (
+                  <Text key={f.id} style={styles.meta}>
+                    Evidence: {f.file_name}
+                    {f.content_hash ? ` · SHA-256 ${f.content_hash}` : ""}
+                  </Text>
+                ))}
+                {item.completed_at ? (
+                  <Text style={styles.meta}>
+                    Completed {item.completed_at} by {item.completed_by}
+                  </Text>
+                ) : null}
+              </View>
+            );
+          })}
         </View>
 
         <View style={styles.section}>
@@ -170,8 +255,11 @@ export function EvidencePackDocument({
           ) : (
             evidence.map((e) => (
               <Text key={e.id} style={styles.meta}>
-                • {e.file_name} (item {e.checklist_item_id.slice(0, 8)}…) —
-                uploaded {e.created_at} by {e.uploaded_by}
+                • {e.file_name}
+                {e.content_hash ? ` · ${e.content_hash}` : ""}
+                {e.mime_type ? ` · ${e.mime_type}` : ""}
+                {e.byte_size != null ? ` · ${e.byte_size} B` : ""} — uploaded{" "}
+                {e.created_at} by {e.uploaded_by}
               </Text>
             ))
           )}

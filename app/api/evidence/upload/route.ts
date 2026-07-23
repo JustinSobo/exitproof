@@ -89,6 +89,9 @@ export async function POST(request: Request) {
       file_name: safeName,
       storage_path: path,
       uploaded_by: ctx.user.email,
+      mime_type: validated.data.mimeType,
+      byte_size: bytes.byteLength,
+      content_hash: null,
     })
     .select("*")
     .single();

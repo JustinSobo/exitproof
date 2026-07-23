@@ -1,6 +1,7 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
-import { getCurrentOrg } from "@/lib/auth";
+import { getCurrentOrg, normalizeOrganization } from "@/lib/auth";
+import { parseExportFramework } from "@/lib/compliance";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
 import { EvidencePackDocument } from "@/lib/pdf/evidence-pack";
@@ -13,7 +14,7 @@ import type {
 } from "@/lib/types";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ caseId: string }> },
 ) {
   const ctx = await getCurrentOrg();
@@ -22,6 +23,9 @@ export async function GET(
   }
 
   const { caseId } = await context.params;
+  const framework = parseExportFramework(
+    new URL(request.url).searchParams.get("framework"),
+  );
   const pack = await loadPack(caseId, ctx.org);
 
   if (!pack) {
@@ -31,14 +35,16 @@ export async function GET(
   const buffer = await renderToBuffer(
     EvidencePackDocument({
       ...pack,
+      framework,
       generatedAt: new Date().toISOString(),
     }),
   );
 
+  const fwSuffix = framework === "all" ? "" : `-${framework}`;
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="exitproof-${caseId.slice(0, 8)}.pdf"`,
+      "Content-Disposition": `attachment; filename="exitproof-${caseId.slice(0, 8)}${fwSuffix}.pdf"`,
     },
   });
 }
@@ -65,7 +71,6 @@ async function loadPack(caseId: string, org: Organization) {
     .maybeSingle();
   if (!offboardingCase) return null;
 
-  // Defense in depth beyond RLS: case must belong to session org or a child.
   const caseOrgId = offboardingCase.org_id as string;
   if (caseOrgId !== org.id) {
     const { data: child } = await supabase
@@ -77,7 +82,7 @@ async function loadPack(caseId: string, org: Organization) {
     if (!child) return null;
   }
 
-  const [{ data: items }, { data: evidence }, { data: audits }] =
+  const [{ data: items }, { data: evidence }, { data: audits }, { data: caseOrg }] =
     await Promise.all([
       supabase
         .from("checklist_items")
@@ -90,13 +95,38 @@ async function loadPack(caseId: string, org: Organization) {
         .select("*")
         .eq("case_id", caseId)
         .order("created_at"),
+      supabase.from("organizations").select("*").eq("id", caseOrgId).maybeSingle(),
     ]);
 
   return {
-    org,
+    org: caseOrg ? normalizeOrganization(caseOrg) : org,
     offboardingCase: offboardingCase as OffboardingCase,
-    items: (items ?? []) as ChecklistItem[],
-    evidence: (evidence ?? []) as EvidenceFile[],
+    items: normalizeItems(items ?? []),
+    evidence: normalizeEvidence(evidence ?? []),
     audits: (audits ?? []) as AuditEvent[],
   };
+}
+
+function normalizeItems(
+  rows: Record<string, unknown>[],
+): ChecklistItem[] {
+  return rows.map((row) => ({
+    ...(row as unknown as ChecklistItem),
+    control_refs: Array.isArray(row.control_refs)
+      ? (row.control_refs as string[])
+      : [],
+    evidence_hint: (row.evidence_hint as string | null) ?? null,
+    notified_at: (row.notified_at as string | null) ?? null,
+  }));
+}
+
+function normalizeEvidence(
+  rows: Record<string, unknown>[],
+): EvidenceFile[] {
+  return rows.map((row) => ({
+    ...(row as unknown as EvidenceFile),
+    content_hash: (row.content_hash as string | null) ?? null,
+    mime_type: (row.mime_type as string | null) ?? null,
+    byte_size: (row.byte_size as number | null) ?? null,
+  }));
 }

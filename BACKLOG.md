@@ -19,12 +19,12 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 
 - [x] **B1** Enforce `requires_evidence` server-side: critical steps can't complete without evidence/ticket URL; cases can't close with open critical steps
 - [ ] **B2** Signed-URL evidence download + image thumbnails in case detail
-- [ ] **B3** SHA-256 hash per evidence file stored on `evidence_files`; embed images + hash manifest in PDF pack (`lib/pdf/evidence-pack.tsx`)
+- [ ] **B3** SHA-256 hash per evidence file stored on `evidence_files`; embed images + hash manifest in PDF pack (`lib/pdf/evidence-pack.tsx`) — columns exist (migration 005); hash-on-upload + PDF manifest still open (Phase E)
 - [ ] **B4** Retention enforcement: purge job honoring plan `retention_days`, audit event on purge
-- [ ] **B5** Control mapping: tag template steps with framework refs (SOC 2 CC6.2/CC6.3, ISO 27001 A.6.5, NIST 800-171 3.1.1); show refs in checklist + Evidence Pack
+- [x] **B5** Control mapping: curated FedRAMP/CMMC/800-53/800-171/SOC/ISO/HIPAA/CSF catalog; template `controlRefs` + `evidenceHint`; case snapshot; chips; framework-filtered PDF/CSV (`lib/compliance/`, migration `005`)
 - [ ] **B6** Audit completeness: events for case close, evidence download, settings changes, plan changes
-- [ ] **B7** Overdue notification dedupe (`notified_at`)
-- [ ] **B8** Compliance posture page: per-org readiness summary (sampled-leaver evidence coverage %, avg time-to-revoke)
+- [ ] **B7** Overdue notification dedupe (`notified_at`) — column added in 005; cron dedupe still open (Phase E)
+- [ ] **B8** Compliance posture page: per-org readiness summary (sampled-leaver evidence coverage %, avg time-to-revoke) — coverage helper ready; UI is Phase C
 
 ## Pillar C — Evidence questionnaire + customization (score 2)
 
@@ -32,12 +32,12 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 - [ ] **C2** Template customizer: org-scoped editor (add/remove/reorder, critical + requires_evidence, due offsets)
 - [ ] **C3** Template versioning: record `template_version` on case snapshot
 - [ ] **C4** Re-run questionnaire from settings when stack changes; diff preview before applying
-- [ ] **C5** Per-step evidence type hints shown in checklist and required-evidence validation
+- [x] **C5** Per-step evidence type hints shown in checklist (template `evidenceHint` → `checklist_items.evidence_hint`); required-evidence validation still B1
 - [ ] **C6** Template import from CSV
 
 ## Pillar D — Live-mode correctness (score 4)
 
-- [x] **D1** Template ID unification: SQL UUIDs as source of truth; live `createCaseAction` writes `template_id: null`
+- [x] **D1** Template ID unification: SQL UUIDs as source of truth; live create persists `template_id` + resolves `template_step_id` by sort_order
 - [x] **D2** Agency child-org cases missing from live dashboard/cases queries
 - [ ] **D3** Monthly usage counter persistence for gating (`lib/billing/gates.ts`)
 - [x] **D4** Trial copy honesty: landing says "14 days", product gates 3 offboards — align

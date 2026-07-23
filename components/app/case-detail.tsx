@@ -6,6 +6,7 @@ import {
   updateCaseStatusAction,
   updateChecklistAction,
 } from "@/lib/actions/cases";
+import { controlChipLabel, resolveControlRefs } from "@/lib/compliance";
 import type {
   AuditEvent,
   CaseStatus,
@@ -15,6 +16,15 @@ import type {
 } from "@/lib/types";
 
 const STATUSES: CaseStatus[] = ["open", "in_progress", "blocked", "closed"];
+
+const EXPORT_FRAMEWORKS = [
+  { value: "all", label: "All" },
+  { value: "fedramp", label: "FedRAMP" },
+  { value: "cmmc-l2", label: "CMMC" },
+  { value: "soc2", label: "SOC 2" },
+  { value: "iso-27001", label: "ISO 27001" },
+  { value: "nist-800-171", label: "800-171" },
+] as const;
 
 export function CaseDetailClient({
   offboardingCase,
@@ -33,6 +43,7 @@ export function CaseDetailClient({
   const [evidence, setEvidence] = useState(initialEvidence);
   const [status, setStatus] = useState(offboardingCase.status);
   const [message, setMessage] = useState<string | null>(null);
+  const [exportFw, setExportFw] = useState<string>("all");
 
   function refresh() {
     router.refresh();
@@ -109,6 +120,7 @@ export function CaseDetailClient({
   }
 
   const done = items.filter((i) => i.status === "done").length;
+  const fwQuery = exportFw === "all" ? "" : `?framework=${exportFw}`;
 
   return (
     <div className="space-y-8">
@@ -121,11 +133,12 @@ export function CaseDetailClient({
             {offboardingCase.employee_email} · {offboardingCase.template_name}
           </p>
           <p className="mt-1 text-sm text-[var(--fog)]">
-            Progress {done}/{items.length} · Due {offboardingCase.due_date || "—"} ·
-            Assignee {offboardingCase.assignee_email || "—"}
+            Progress {done}/{items.length} · Due{" "}
+            {offboardingCase.due_date || "—"} · Assignee{" "}
+            {offboardingCase.assignee_email || "—"}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={status}
             onChange={(e) => onStatusChange(e.target.value as CaseStatus)}
@@ -138,14 +151,26 @@ export function CaseDetailClient({
               </option>
             ))}
           </select>
+          <select
+            value={exportFw}
+            onChange={(e) => setExportFw(e.target.value)}
+            className="rounded-md border border-[var(--line)] bg-black/30 px-3 py-2 text-sm text-white"
+            aria-label="Export framework filter"
+          >
+            {EXPORT_FRAMEWORKS.map((f) => (
+              <option key={f.value} value={f.value}>
+                Export: {f.label}
+              </option>
+            ))}
+          </select>
           <a
-            href={`/api/export/${offboardingCase.id}/pdf`}
+            href={`/api/export/${offboardingCase.id}/pdf${fwQuery}`}
             className="rounded-md bg-[var(--teal)] px-3 py-2 text-sm font-semibold text-[#04201d]"
           >
             Export PDF
           </a>
           <a
-            href={`/api/export/${offboardingCase.id}/csv`}
+            href={`/api/export/${offboardingCase.id}/csv${fwQuery}`}
             className="rounded-md border border-[var(--line)] px-3 py-2 text-sm hover:bg-white/5"
           >
             Export CSV
@@ -163,6 +188,10 @@ export function CaseDetailClient({
         </h2>
         {items.map((item) => {
           const files = evidence.filter((e) => e.checklist_item_id === item.id);
+          const controls = resolveControlRefs(item.control_refs ?? []).slice(
+            0,
+            8,
+          );
           return (
             <article
               key={item.id}
@@ -182,9 +211,38 @@ export function CaseDetailClient({
                         Evidence required
                       </span>
                     ) : null}
-                    <span className="text-xs text-[var(--fog)]">{item.category}</span>
+                    <span className="text-xs text-[var(--fog)]">
+                      {item.category}
+                    </span>
                   </div>
-                  <p className="mt-1 text-sm text-[var(--fog)]">{item.description}</p>
+                  <p className="mt-1 text-sm text-[var(--fog)]">
+                    {item.description}
+                  </p>
+                  {controls.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {controls.map((ctrl) => (
+                        <span
+                          key={ctrl.key}
+                          title={ctrl.guidance}
+                          className="rounded border border-[var(--line)] bg-black/25 px-1.5 py-0.5 text-[10px] text-[var(--teal-bright)]"
+                        >
+                          {controlChipLabel(ctrl)}
+                        </span>
+                      ))}
+                      {(item.control_refs?.length ?? 0) > controls.length ? (
+                        <span className="text-[10px] text-[var(--fog)]">
+                          +
+                          {(item.control_refs?.length ?? 0) - controls.length}{" "}
+                          more
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {item.evidence_hint ? (
+                    <p className="mt-2 text-xs text-[var(--fog)]">
+                      Evidence hint: {item.evidence_hint}
+                    </p>
+                  ) : null}
                 </div>
                 <button
                   type="button"
@@ -256,7 +314,8 @@ export function CaseDetailClient({
           {audits.map((a) => (
             <li key={a.id} className="border-t border-[var(--line)] pt-2">
               <span className="text-white">{a.event_type}</span> ·{" "}
-              {a.actor_email || "system"} · {new Date(a.created_at).toLocaleString()}
+              {a.actor_email || "system"} ·{" "}
+              {new Date(a.created_at).toLocaleString()}
             </li>
           ))}
         </ul>

@@ -100,9 +100,19 @@ export async function createCaseAction(formData: FormData): Promise<void> {
     redirect(`/cases/new?error=${encodeURIComponent(error.message)}`);
   }
 
+  const { data: dbSteps } = await supabase
+    .from("template_steps")
+    .select("id, sort_order")
+    .eq("template_id", template.id)
+    .order("sort_order");
+
+  const stepIdByOrder = new Map(
+    (dbSteps ?? []).map((s) => [s.sort_order as number, s.id as string]),
+  );
+
   const items = template.steps.map((step) => ({
     case_id: created.id,
-    template_step_id: null,
+    template_step_id: stepIdByOrder.get(step.sort_order) ?? null,
     title: step.title,
     description: step.description,
     requires_evidence: step.requires_evidence,
@@ -110,9 +120,37 @@ export async function createCaseAction(formData: FormData): Promise<void> {
     status: "pending" as const,
     sort_order: step.sort_order,
     category: step.category,
+    evidence_hint: step.evidenceHint || null,
+    control_refs: step.controlRefs ?? [],
   }));
 
-  await supabase.from("checklist_items").insert(items);
+  const { data: insertedItems, error: itemsError } = await supabase
+    .from("checklist_items")
+    .insert(items)
+    .select("id, sort_order");
+
+  if (itemsError) {
+    redirect(`/cases/new?error=${encodeURIComponent(itemsError.message)}`);
+  }
+
+  const { controlUuid } = await import("@/lib/compliance/ids");
+  const controlLinks: { checklist_item_id: string; control_id: string }[] = [];
+  for (const row of insertedItems ?? []) {
+    const step = template.steps.find((s) => s.sort_order === row.sort_order);
+    for (const ref of step?.controlRefs ?? []) {
+      const uuid = controlUuid(ref);
+      if (uuid) {
+        controlLinks.push({
+          checklist_item_id: row.id,
+          control_id: uuid,
+        });
+      }
+    }
+  }
+  if (controlLinks.length > 0) {
+    await supabase.from("checklist_item_controls").insert(controlLinks);
+  }
+
   await supabase.from("audit_events").insert({
     org_id: orgId,
     case_id: created.id,

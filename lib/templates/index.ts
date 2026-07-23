@@ -28,8 +28,14 @@ export function getSeedTemplates(): OffboardingTemplate[] {
     description: t.description,
     steps: t.steps.map((s, i) => ({
       id: `${t.id}-step-${i + 1}`,
-      ...s,
+      title: s.title,
+      description: s.description,
       sort_order: s.sort_order || i + 1,
+      requires_evidence: s.requires_evidence,
+      is_critical: s.is_critical,
+      category: s.category,
+      controlRefs: s.controlRefs,
+      evidenceHint: s.evidenceHint,
     })) as TemplateStep[],
   }));
 }

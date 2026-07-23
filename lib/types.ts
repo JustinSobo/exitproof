@@ -45,8 +45,8 @@ export interface TemplateStep {
   is_critical: boolean;
   category: string;
   /** Control keys like `soc2:CC6.2` — see lib/compliance. */
-  controlRefs?: string[];
-  evidenceHint?: string;
+  controlRefs: string[];
+  evidenceHint: string;
 }
 
 export interface OffboardingTemplate {

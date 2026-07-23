@@ -62,11 +62,25 @@ export default async function CasePage({
         .order("created_at"),
     ]);
 
+  const normalizedItems = (items ?? []).map((item) => ({
+    ...item,
+    control_refs: Array.isArray(item.control_refs) ? item.control_refs : [],
+    evidence_hint: item.evidence_hint ?? null,
+    notified_at: item.notified_at ?? null,
+  }));
+
+  const normalizedEvidence = (evidence ?? []).map((e) => ({
+    ...e,
+    content_hash: e.content_hash ?? null,
+    mime_type: e.mime_type ?? null,
+    byte_size: e.byte_size ?? null,
+  }));
+
   return (
     <CaseDetailClient
       offboardingCase={offboardingCase}
-      items={items ?? []}
-      evidence={evidence ?? []}
+      items={normalizedItems}
+      evidence={normalizedEvidence}
       audits={audits ?? []}
     />
   );
