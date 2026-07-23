@@ -15,7 +15,15 @@ import { sendOverdueEmail } from "@/lib/resend";
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization");
   const secret = process.env.CRON_SECRET;
-  if (secret && auth !== `Bearer ${secret}`) {
+
+  // Fail closed in live mode: CRON_SECRET must be set and match.
+  // Demo mode allows open access when unset (local convenience) but
+  // still enforces the bearer token when the secret is configured.
+  if (!isDemoMode()) {
+    if (!secret || auth !== `Bearer ${secret}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  } else if (secret && auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

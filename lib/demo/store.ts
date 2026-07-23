@@ -34,7 +34,6 @@ interface DemoState {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var __exitproofDemo: DemoState | undefined;
 }
 

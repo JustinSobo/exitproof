@@ -9,6 +9,10 @@ const PAID: Array<{ id: PlanId; name: string; price: number }> = [
   { id: "agency", name: "Agency", price: 249 },
 ];
 
+function redirectTo(url: string) {
+  window.location.assign(url);
+}
+
 export function BillingActions({ currentPlan }: { currentPlan: PlanId }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +28,7 @@ export function BillingActions({ currentPlan }: { currentPlan: PlanId }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout failed");
-      if (data.url) window.location.href = data.url;
+      if (data.url) redirectTo(data.url);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Checkout failed");
     } finally {
@@ -39,7 +43,7 @@ export function BillingActions({ currentPlan }: { currentPlan: PlanId }) {
       const res = await fetch("/api/stripe/portal", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Portal failed");
-      if (data.url) window.location.href = data.url;
+      if (data.url) redirectTo(data.url);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Portal failed");
     } finally {
