@@ -98,6 +98,7 @@ export async function POST(request: Request) {
       mime_type: validated.data.mimeType,
       byte_size: bytes.byteLength,
       content_hash: contentHash,
+      collection_source: "human",
     })
     .select("*")
     .single();

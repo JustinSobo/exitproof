@@ -186,7 +186,10 @@ function main(): void {
   console.log(`Blob prefix:      ${blobPrefix}`);
   console.log(`Bicep module:     ${bicepModule}`);
   console.log(
-    "\nDry-run complete. Apply migrations 006–008, use /operator for onboard + JIT, then wire Azure deploy (H5).",
+    "\nDry-run complete. Apply migrations 006–010, use /operator for onboard + JIT, then wire Azure deploy (H6).",
+  );
+  console.log(
+    `Retention defaults: Standard ${90} days / Dedicated ${365} days (docs/commercial/skus.md).`,
   );
 }
 

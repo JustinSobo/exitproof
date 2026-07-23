@@ -95,6 +95,56 @@ export async function setAutoEvidenceAction(formData: FormData) {
   redirect("/connectors?saved=1");
 }
 
+export async function setAdAutoEvidenceAction(formData: FormData) {
+  const ctx = await requireOrgAdmin();
+  const values = formData.getAll("enabled").map(String);
+  const enabled = values.includes("true");
+
+  if (isDemoMode()) {
+    demoStore.updateOrg(ctx.org.id, { ad_auto_evidence_enabled: enabled });
+    revalidateConnectors();
+    redirect("/connectors?saved=1");
+  }
+
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organizations")
+    .update({ ad_auto_evidence_enabled: enabled })
+    .eq("id", ctx.org.id);
+  if (error) {
+    redirect(`/connectors?error=${encodeURIComponent(error.message)}`);
+  }
+  revalidateConnectors();
+  redirect("/connectors?saved=1");
+}
+
+export async function setRequireHumanAttestAction(formData: FormData) {
+  const ctx = await requireOrgAdmin();
+  const values = formData.getAll("enabled").map(String);
+  const enabled = values.includes("true");
+
+  if (isDemoMode()) {
+    demoStore.updateOrg(ctx.org.id, {
+      require_human_attest_on_critical: enabled,
+    });
+    revalidateConnectors();
+    redirect("/connectors?saved=1");
+  }
+
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organizations")
+    .update({ require_human_attest_on_critical: enabled })
+    .eq("id", ctx.org.id);
+  if (error) {
+    redirect(`/connectors?error=${encodeURIComponent(error.message)}`);
+  }
+  revalidateConnectors();
+  redirect("/connectors?saved=1");
+}
+
 export async function setEntraTenantIdAction(formData: FormData) {
   const ctx = await requireOrgAdmin();
   const tid = String(formData.get("entra_tenant_id") || "").trim();
@@ -243,6 +293,7 @@ export async function refreshCaseDirectorySnapshotAction(
         existingEvidence: evidence,
         snapshot,
         autoEvidenceEnabled: true,
+        selectedFrameworks: ctx.org.selected_frameworks,
         actor: ctx.user,
         orgId: offboardingCase.org_id,
         caseId,
@@ -277,6 +328,7 @@ export async function refreshCaseDirectorySnapshotAction(
               mime_type: input.mimeType,
               byte_size: input.byteSize,
               content_hash: input.contentHash,
+              collection_source: "system:graph",
             })
             .select("*")
             .single();

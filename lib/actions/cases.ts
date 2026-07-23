@@ -283,10 +283,16 @@ export async function updateChecklistAction(
   if (patch.status === "done") {
     const { data: evidence } = await supabase
       .from("evidence_files")
-      .select("checklist_item_id")
+      .select(
+        "checklist_item_id, uploaded_by, collection_source, file_name, storage_path",
+      )
       .eq("case_id", current.case_id);
     try {
-      assertCanCompleteItem(current, evidence ?? [], patch.ticket_url);
+      assertCanCompleteItem(current, evidence ?? [], {
+        ticketUrlOverride: patch.ticket_url,
+        requireHumanAttestOnCritical:
+          ctx.org.require_human_attest_on_critical !== false,
+      });
     } catch (e) {
       return {
         error: e instanceof Error ? e.message : "Evidence required",

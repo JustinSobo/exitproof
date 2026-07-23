@@ -24,7 +24,7 @@
 - Entra SSO for customer users (as platform auth matures)
 - Append-only audit events
 - GridLogic support under the managed package SOW
-- Standard retention (exact days — _TBD commercial_)
+- Standard retention: **90 days** (aligned with product `retention_days` for Standard / Team)
 
 **Does not include by default:** Graph directory audit, Hybrid AD connector, auto-evidence policies, Dedicated isolation, Managed Evidence Ops.
 
@@ -38,7 +38,7 @@
 
 - Dedicated data plane (and optional dedicated web tier)
 - Optional private networking
-- Higher retention tier (_TBD commercial_)
+- Higher retention tier: **365 days** (aligned with product Growth / Dedicated)
 - Stronger isolation narrative for CMMC / FedRAMP-sensitive buyers
 
 **Ops note:** Higher Azure cost and provision time; GridLogic runbook uses `modules/tenant-dedicated`.
@@ -83,11 +83,11 @@
 
 **Includes:**
 
-- Policy flag `auto_evidence_enabled` (or equivalent)
-- Scheduled / on-step collection → hashed blob → linked to checklist step
+- Policy flags: `auto_evidence_enabled`, `ad_auto_evidence_enabled`, `require_human_attest_on_critical` (default true)
+- Scheduled / on-step collection → hashed blob → linked to checklist step via per-framework auto-map
 - Audit event `evidence.auto_collected`
-- Pack labeling as **system-collected** (never certification claim)
-- Phase 5: attest-on-critical policies
+- Pack labeling as **system-collected** vs **human-attached** (Evidence Pack v3)
+- Attest-on-critical: system-collected alone cannot mark critical steps done
 
 ---
 
@@ -124,7 +124,7 @@ Suitable for customers who want GridLogic to operate the evidence rhythm under t
 - [ ] PSA/CRM ticket templates for provision, consent, connector install
 - [ ] SOW language referencing Standard vs Dedicated and add-ons
 - [ ] RACI: GridLogic vs customer IT (consent, OU scope, break-glass)
-- [ ] Retention defaults per SKU (_TBD_)
+- [x] Retention defaults per SKU (Standard 90 / Dedicated 365 — product-aligned; commercial contracts may override)
 - [ ] Align Stripe/self-serve plans in current app with GridLogic billing over time (not blocking Phase 0)
 
 ## Non-SKU / non-goals

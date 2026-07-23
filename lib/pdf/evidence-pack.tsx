@@ -13,6 +13,12 @@ import {
   resolveControlRefs,
   type ExportFrameworkFilter,
 } from "@/lib/compliance";
+import {
+  collectionSourceLabel,
+  partitionEvidenceBySource,
+  resolveCollectionSource,
+  retentionPolicyNote,
+} from "@/lib/evidence";
 import type {
   AuditEvent,
   ChecklistItem,
@@ -101,6 +107,20 @@ export type EvidencePackProps = {
   framework?: ExportFrameworkFilter;
 };
 
+function renderEvidenceLine(e: EvidenceFile) {
+  const source = resolveCollectionSource(e);
+  return (
+    <Text key={e.id} style={styles.meta}>
+      • {e.file_name}
+      {"\n"}  {collectionSourceLabel(source)}
+      {"\n"}  SHA-256: {e.content_hash || "(hash unavailable)"}
+      {e.mime_type ? ` · ${e.mime_type}` : ""}
+      {e.byte_size != null ? ` · ${e.byte_size} B` : ""}
+      {"\n"}  captured {e.created_at} by {e.uploaded_by}
+    </Text>
+  );
+}
+
 export function EvidencePackDocument({
   org,
   offboardingCase,
@@ -119,13 +139,19 @@ export function EvidencePackDocument({
       : (getFramework(framework)?.name ?? framework);
   const selectedFw = org.selected_frameworks ?? [];
   const selected = selectedFw.length > 0 ? selectedFw.join(", ") : "—";
+  const { systemCollected, humanAttached } = partitionEvidenceBySource(evidence);
+  const retentionNote = retentionPolicyNote(org);
+  const attestPolicy =
+    org.require_human_attest_on_critical !== false
+      ? "Critical steps require human attestation (system-collected alone cannot close)."
+      : "Human-attest-on-critical policy disabled for this tenant.";
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         <Text style={styles.brand}>ExitProof</Text>
         <Text style={styles.subtitle}>
-          Evidence Pack — audit-ready IT offboarding record ({fwLabel})
+          Evidence Pack v3 — audit-ready IT offboarding record ({fwLabel})
         </Text>
 
         <View style={styles.section}>
@@ -175,6 +201,8 @@ export function EvidencePackDocument({
             Supports evidence for listed controls — does not guarantee
             certification or FedRAMP authorization of ExitProof as a CSP.
           </Text>
+          <Text style={styles.disclaimer}>{attestPolicy}</Text>
+          <Text style={styles.disclaimer}>{retentionNote}</Text>
         </View>
 
         <View style={styles.section}>
@@ -234,7 +262,8 @@ export function EvidencePackDocument({
                 ) : null}
                 {files.map((f) => (
                   <Text key={f.id} style={styles.meta}>
-                    Evidence: {f.file_name}
+                    Evidence: {f.file_name} ·{" "}
+                    {collectionSourceLabel(resolveCollectionSource(f))}
                     {f.content_hash ? ` · SHA-256 ${f.content_hash}` : ""}
                   </Text>
                 ))}
@@ -249,13 +278,38 @@ export function EvidencePackDocument({
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.h2}>System-collected evidence</Text>
+          <Text style={styles.disclaimer}>
+            Point-in-time Graph/AD snapshots. Labeled system-collected — not a
+            certification claim. Critical steps still need human attestation.
+          </Text>
+          {systemCollected.length === 0 ? (
+            <Text style={styles.meta}>No system-collected files.</Text>
+          ) : (
+            systemCollected.map(renderEvidenceLine)
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.h2}>Human-attached evidence</Text>
+          <Text style={styles.disclaimer}>
+            Files uploaded by operators or linked via ticket URL on the case.
+          </Text>
+          {humanAttached.length === 0 ? (
+            <Text style={styles.meta}>No human-attached files.</Text>
+          ) : (
+            humanAttached.map(renderEvidenceLine)
+          )}
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.h2}>Evidence hash manifest (SHA-256)</Text>
           {evidence.length === 0 ? (
             <Text style={styles.meta}>No evidence files attached.</Text>
           ) : (
             evidence.map((e) => (
               <Text key={e.id} style={styles.meta}>
-                • {e.file_name}
+                • [{resolveCollectionSource(e)}] {e.file_name}
                 {"\n"}  SHA-256: {e.content_hash || "(hash unavailable)"}
                 {e.mime_type ? ` · ${e.mime_type}` : ""}
                 {e.byte_size != null ? ` · ${e.byte_size} B` : ""}
@@ -275,9 +329,9 @@ export function EvidencePackDocument({
         </View>
 
         <View style={styles.footer}>
-          <Text>Generated {generatedAt} · ExitProof Evidence Pack</Text>
+          <Text>Generated {generatedAt} · ExitProof Evidence Pack v3</Text>
           <Text>
-            Retention policy: {org.retention_days} days · Plan: {org.plan}
+            Retention {org.retention_days} days · Plan: {org.plan}
           </Text>
         </View>
       </Page>

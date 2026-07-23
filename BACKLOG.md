@@ -60,7 +60,8 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 - [x] **H2** Phase 2: GridLogic operator console (`/operator`), JIT staff access (migration `008`), onboard wizard, audited org switcher; Agency soft-retired as security boundary
 - [x] **H3** Phase 3: Graph read-only connector + consent (`lib/connectors/graph/`, `/connectors`, migration `007_graph_connector.sql`, case Entra mismatch + optional auto-evidence)
 - [x] **H4** Phase 4 foundation: Hybrid AD connector skeleton (`apps/connector`), protocol docs, register/heartbeat/snapshot APIs, case AD status + mismatch UI, migration `009_ad_connector.sql`
-- [ ] **H5** Live Azure deploy (Container Apps + SQL + Blob + KV) beyond Bicep stubs
+- [x] **H5** Phase 5: auto-evidence policies (`lib/evidence/`), Graph/AD → FedRAMP/CMMC auto-map, attest-on-critical, Evidence Pack v3 system vs human sections, migration `010_auto_evidence_policy.sql`, DEMO Jordan Lee
+- [ ] **H6** Live Azure deploy (Container Apps + SQL + Blob + KV) beyond Bicep stubs
 
 ## Pillar F — UX/UI (score 1)
 

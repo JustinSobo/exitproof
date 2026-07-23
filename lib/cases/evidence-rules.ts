@@ -1,4 +1,8 @@
 import type { ChecklistItem, EvidenceFile } from "@/lib/types";
+import {
+  isHumanAttachedEvidence,
+  isSystemCollectedEvidence,
+} from "@/lib/evidence/collection-source";
 
 export function itemHasEvidenceProof(
   item: Pick<ChecklistItem, "id" | "ticket_url">,
@@ -9,23 +13,90 @@ export function itemHasEvidenceProof(
   return hasTicket || hasFile;
 }
 
-/** Block completing steps that require evidence without a file or ticket URL. */
-export function assertCanCompleteItem(
-  item: Pick<ChecklistItem, "id" | "requires_evidence" | "ticket_url" | "title">,
-  evidence: Pick<EvidenceFile, "checklist_item_id">[],
+/** Human-attached file or ticket URL — excludes system-collected snapshots. */
+export function itemHasHumanAttestProof(
+  item: Pick<ChecklistItem, "id" | "ticket_url">,
+  evidence: Pick<
+    EvidenceFile,
+    "checklist_item_id" | "uploaded_by" | "collection_source" | "file_name" | "storage_path"
+  >[],
   ticketUrlOverride?: string,
-): void {
-  if (!item.requires_evidence) return;
+): boolean {
   const ticket =
     ticketUrlOverride !== undefined ? ticketUrlOverride : item.ticket_url;
-  if (
-    itemHasEvidenceProof(
-      { id: item.id, ticket_url: ticket },
-      evidence,
-    )
-  ) {
-    return;
+  if (ticket?.trim()) return true;
+  return evidence.some(
+    (e) =>
+      e.checklist_item_id === item.id && isHumanAttachedEvidence(e),
+  );
+}
+
+export type AssertCanCompleteOptions = {
+  ticketUrlOverride?: string;
+  /**
+   * When true (default), critical steps cannot be completed with
+   * system-collected evidence alone — human file or ticket required.
+   */
+  requireHumanAttestOnCritical?: boolean;
+};
+
+/** Block completing steps that require evidence without a file or ticket URL. */
+export function assertCanCompleteItem(
+  item: Pick<
+    ChecklistItem,
+    "id" | "requires_evidence" | "is_critical" | "ticket_url" | "title"
+  >,
+  evidence: Pick<
+    EvidenceFile,
+    | "checklist_item_id"
+    | "uploaded_by"
+    | "collection_source"
+    | "file_name"
+    | "storage_path"
+  >[],
+  ticketUrlOverrideOrOpts?: string | AssertCanCompleteOptions,
+): void {
+  const opts: AssertCanCompleteOptions =
+    typeof ticketUrlOverrideOrOpts === "string"
+      ? { ticketUrlOverride: ticketUrlOverrideOrOpts }
+      : (ticketUrlOverrideOrOpts ?? {});
+
+  const requireHumanAttest = opts.requireHumanAttestOnCritical !== false;
+  const ticket =
+    opts.ticketUrlOverride !== undefined
+      ? opts.ticketUrlOverride
+      : item.ticket_url;
+
+  const itemEvidence = evidence.filter((e) => e.checklist_item_id === item.id);
+  const hasAnyProof = itemHasEvidenceProof(
+    { id: item.id, ticket_url: ticket },
+    itemEvidence,
+  );
+  const hasHumanProof = itemHasHumanAttestProof(
+    { id: item.id, ticket_url: ticket },
+    itemEvidence,
+    ticket ?? undefined,
+  );
+  const hasOnlySystem =
+    !hasHumanProof &&
+    itemEvidence.some((e) => isSystemCollectedEvidence(e));
+
+  // Critical + attest policy: system-collected alone cannot close the step.
+  if (item.is_critical && requireHumanAttest) {
+    if (hasHumanProof) return;
+    if (hasOnlySystem || (item.requires_evidence && !hasAnyProof)) {
+      throw new Error(
+        `"${item.title}" is critical and requires human attestation: attach a human evidence file or add a ticket URL. System-collected snapshots alone cannot close this step.`,
+      );
+    }
+    // Critical without requires_evidence and without system evidence: allow mark done (human click is attest).
+    if (!item.requires_evidence) return;
   }
+
+  if (!item.requires_evidence) return;
+
+  if (hasAnyProof) return;
+
   throw new Error(
     `"${item.title}" requires evidence: attach a file or add a ticket URL before marking done.`,
   );

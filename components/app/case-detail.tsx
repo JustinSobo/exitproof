@@ -14,6 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { buttonClassName } from "@/components/ui/button";
 import { fieldControlClass } from "@/components/ui/field";
 import { controlChipLabel, resolveControlRefs } from "@/lib/compliance";
+import {
+  isSystemCollectedEvidence,
+} from "@/lib/evidence";
 import type { CaseDirectoryStatus } from "@/lib/connectors/ad";
 import type { DirectorySnapshot } from "@/lib/connectors/graph";
 import type {
@@ -187,6 +190,13 @@ export function CaseDetailClient({
               ) : null}
               {item.requires_evidence ? (
                 <Badge variant="amber">Evidence required</Badge>
+              ) : null}
+              {item.is_critical &&
+              files.some((f) => isSystemCollectedEvidence(f)) &&
+              !files.some((f) => !isSystemCollectedEvidence(f)) &&
+              !item.ticket_url?.trim() &&
+              item.status !== "done" ? (
+                <Badge variant="amber">Needs human attest</Badge>
               ) : null}
               {files.length > 0 ? (
                 <span className="text-[10px] text-[var(--fog)]">

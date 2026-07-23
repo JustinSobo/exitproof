@@ -3,13 +3,16 @@ import { redirect } from "next/navigation";
 import {
   getAdminConsentUrlForOrg,
   markGraphConsentAction,
+  setAdAutoEvidenceAction,
   setAutoEvidenceAction,
   setEntraTenantIdAction,
+  setRequireHumanAttestAction,
 } from "@/lib/actions/connectors";
 import { Alert } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentOrg, isOrgAdminRole, sessionTenantId } from "@/lib/auth";
 import { GRAPH_ADMIN_CONSENT_SCOPES, graphCredsSecretRef } from "@/lib/connectors/graph";
+import { AUTO_MAP_RULES, retentionPolicyNote } from "@/lib/evidence";
 import { isDemoMode } from "@/lib/env";
 import type { GraphConsentStatus } from "@/lib/types";
 
@@ -175,36 +178,93 @@ export default async function ConnectorsPage({
 
       <section className="space-y-3">
         <h2 className="font-[family-name:var(--font-syne)] text-xl font-600 text-white">
-          Auto-evidence
+          Auto-evidence policy
         </h2>
         <p className="text-sm text-[var(--fog)]">
-          When enabled, directory snapshots attach a hashed JSON evidence file to
-          the IdP disable checklist step (labeled system-collected). Critical
-          steps still need human attest.
+          When enabled, Graph/AD snapshots attach hashed system-collected files to
+          auto-mapped FedRAMP/CMMC checklist steps (e.g.{" "}
+          {AUTO_MAP_RULES.graph_directory_snapshot.controlHints
+            .filter((h) => h.startsWith("fedramp:") || h.startsWith("cmmc-l2:"))
+            .slice(0, 3)
+            .map((h) => h.split(":")[1])
+            .join(", ")}
+          ). Critical steps still need human attest — system-collected alone cannot
+          mark them done.
         </p>
+        <p className="text-xs text-[var(--fog)]">{retentionPolicyNote(ctx.org)}</p>
         {canManage ? (
-          <form action={setAutoEvidenceAction} className="flex items-center gap-3">
-            <input type="hidden" name="enabled" value="false" />
-            <label className="flex items-center gap-2 text-sm text-white">
-              <input
-                type="checkbox"
-                name="enabled"
-                value="true"
-                defaultChecked={Boolean(ctx.org.auto_evidence_enabled)}
-              />
-              Enable Graph auto-evidence
-            </label>
-            <button
-              type="submit"
-              className="rounded-md bg-[var(--teal)] px-3 py-1.5 text-sm font-semibold text-[#04201d]"
+          <div className="space-y-3">
+            <form action={setAutoEvidenceAction} className="flex items-center gap-3">
+              <input type="hidden" name="enabled" value="false" />
+              <label className="flex items-center gap-2 text-sm text-white">
+                <input
+                  type="checkbox"
+                  name="enabled"
+                  value="true"
+                  defaultChecked={Boolean(ctx.org.auto_evidence_enabled)}
+                />
+                Enable Graph auto-evidence
+              </label>
+              <button
+                type="submit"
+                className="rounded-md bg-[var(--teal)] px-3 py-1.5 text-sm font-semibold text-[#04201d]"
+              >
+                Save
+              </button>
+            </form>
+            <form
+              action={setAdAutoEvidenceAction}
+              className="flex items-center gap-3"
             >
-              Save
-            </button>
-          </form>
+              <input type="hidden" name="enabled" value="false" />
+              <label className="flex items-center gap-2 text-sm text-white">
+                <input
+                  type="checkbox"
+                  name="enabled"
+                  value="true"
+                  defaultChecked={Boolean(ctx.org.ad_auto_evidence_enabled)}
+                />
+                Enable AD auto-evidence
+              </label>
+              <button
+                type="submit"
+                className="rounded-md border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--fog)] hover:bg-white/5 hover:text-white"
+              >
+                Save
+              </button>
+            </form>
+            <form
+              action={setRequireHumanAttestAction}
+              className="flex items-center gap-3"
+            >
+              <input type="hidden" name="enabled" value="false" />
+              <label className="flex items-center gap-2 text-sm text-white">
+                <input
+                  type="checkbox"
+                  name="enabled"
+                  value="true"
+                  defaultChecked={ctx.org.require_human_attest_on_critical !== false}
+                />
+                Require human attest on critical steps
+              </label>
+              <button
+                type="submit"
+                className="rounded-md border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--fog)] hover:bg-white/5 hover:text-white"
+              >
+                Save
+              </button>
+            </form>
+          </div>
         ) : (
           <p className="text-sm text-[var(--fog)]">
-            Auto-evidence:{" "}
+            Graph auto-evidence:{" "}
             {ctx.org.auto_evidence_enabled ? "enabled" : "disabled"}
+            {" · "}AD:{" "}
+            {ctx.org.ad_auto_evidence_enabled ? "enabled" : "disabled"}
+            {" · "}Human attest on critical:{" "}
+            {ctx.org.require_human_attest_on_critical !== false
+              ? "required"
+              : "off"}
           </p>
         )}
       </section>

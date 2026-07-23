@@ -98,6 +98,9 @@ export function normalizeOrganization(raw: Record<string, unknown>): Organizatio
     auto_evidence_enabled: Boolean(raw.auto_evidence_enabled),
     hybrid_ad_enabled: Boolean(raw.hybrid_ad_enabled),
     ad_auto_evidence_enabled: Boolean(raw.ad_auto_evidence_enabled),
+    // Default ON when column absent (Phase 5 attest-on-critical).
+    require_human_attest_on_critical:
+      raw.require_human_attest_on_critical !== false,
   };
 }
 

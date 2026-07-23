@@ -141,7 +141,7 @@ Shown on the case UI when **cloud (Entra) is disabled** but **on-prem AD is stil
 
 ## Auto-evidence (optional)
 
-When `ad_auto_evidence_enabled` is on, `POST /api/connectors/ad/auto-evidence` may build a system-collected CSV + SHA-256 labeled **system-collected snapshot**. Critical steps still require human attest (Phase 5 policy).
+When `ad_auto_evidence_enabled` is on, `POST /api/connectors/ad/auto-evidence` attaches a system-collected CSV + SHA-256 to the auto-mapped checklist step (privileged AD groups / account disable). Labeled **system-collected snapshot**. Critical steps still require human attest (`require_human_attest_on_critical`, default true) — system evidence alone cannot mark them done.
 
 ## Demo / CI simulation
 

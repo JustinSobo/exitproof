@@ -5,6 +5,7 @@ import {
   parseExportFramework,
   resolveControlRefs,
 } from "@/lib/compliance";
+import { resolveCollectionSource } from "@/lib/evidence";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
 import type { ChecklistItem, EvidenceFile, OffboardingCase } from "@/lib/types";
@@ -135,6 +136,10 @@ function expandRows(
       .filter((e) => e.checklist_item_id === item.id)
       .map((e) => e.file_name)
       .join("; ");
+    const sources = evidence
+      .filter((e) => e.checklist_item_id === item.id)
+      .map((e) => resolveCollectionSource(e))
+      .join("; ");
 
     const base = {
       employee_name: c.employee_name,
@@ -151,6 +156,7 @@ function expandRows(
       completed_at: item.completed_at ?? "",
       completed_by: item.completed_by ?? "",
       evidence_files: files,
+      evidence_sources: sources,
     };
 
     if (controls.length === 0) {

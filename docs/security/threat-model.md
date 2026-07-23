@@ -79,7 +79,7 @@ Actors:
 | Threat | Impact | Mitigations |
 |--------|--------|-------------|
 | Operator denies viewing customer evidence | Compliance failure | JIT ticket ID + expiry logged; every staff access audited |
-| “System” evidence claimed as human | Misleading packs | Label system-collected; separate pack sections (Phase 5); `evidence.auto_collected` events |
+| “System” evidence claimed as human | Misleading packs | Label system-collected; Evidence Pack v3 System-collected vs Human-attached sections; `evidence.auto_collected` events; attest-on-critical |
 | Consent unclear | Legal / trust | Admin consent URL + recorded consent health; DPA notes for counsel |
 
 ### 3.4 Information disclosure

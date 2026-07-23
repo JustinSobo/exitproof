@@ -55,6 +55,11 @@ export interface Organization {
   hybrid_ad_enabled?: boolean;
   /** Optional system-collected AD evidence jobs (Phase 4 stub). */
   ad_auto_evidence_enabled?: boolean;
+  /**
+   * Phase 5: when true (default), critical checklist steps cannot be marked
+   * done on system-collected evidence alone — human file or ticket required.
+   */
+  require_human_attest_on_critical?: boolean;
 }
 
 export type {
@@ -146,6 +151,11 @@ export interface EvidenceFile {
   content_hash?: string | null;
   mime_type?: string | null;
   byte_size?: number | null;
+  /**
+   * Evidence Pack v3 provenance. Prefer this when set; otherwise derive from
+   * uploaded_by / path (`lib/evidence/collection-source`).
+   */
+  collection_source?: "human" | "system:graph" | "system:ad" | "system" | null;
 }
 
 export interface AuditEvent {

@@ -184,7 +184,7 @@ Horizon: **~6–9 months** calendar for full charter if one focused team. Each p
 | **2** | GridLogic operator console, JIT staff access, onboard wizard | Onboard Standard customer in &lt;1 hour without SQL — **shipped** (`/operator`, migration `008_operator_jit`) |
 | **3** | Entra multi-tenant app + Graph RO snapshots / mismatch UI | Lab: consent → snapshot → hashed evidence |
 | **4** | Hybrid AD connector (outbound mTLS) | Lab AD detect + pack includes AD export |
-| **5** | Auto-evidence policies & Evidence Pack v3 | System vs human evidence; attest-on-critical |
+| **5** | Auto-evidence policies & Evidence Pack v3 | System vs human evidence; attest-on-critical — **shipped** (`lib/evidence/`, migration `010`, Pack v3 sections) |
 | **6** | Pen test, CI/CD, DR, platform SOC 2 path | Controls tested; RPO/RTO defined |
 | **7** | *(Future)* Graph write / disable with dual-control | Only after RO trust established |
 

@@ -68,6 +68,16 @@ export function EvidencePreview({ file }: { file: EvidenceFile }) {
       >
         {file.file_name}
       </a>
+      {file.uploaded_by?.startsWith("system:") ||
+      file.collection_source?.startsWith("system") ? (
+        <p className="text-[9px] uppercase tracking-wide text-[var(--amber)]">
+          System-collected
+        </p>
+      ) : (
+        <p className="text-[9px] uppercase tracking-wide text-[var(--fog)]">
+          Human-attached
+        </p>
+      )}
       {file.content_hash ? (
         <p className="truncate font-mono text-[9px] text-[var(--fog)]" title={file.content_hash}>
           SHA-256 {file.content_hash.slice(0, 12)}…

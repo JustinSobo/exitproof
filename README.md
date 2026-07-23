@@ -151,9 +151,9 @@ GridLogic registers a **multi-tenant** Entra application. Each customer admin gr
 1. Bind customer Entra directory ID (`entra_tenant_id`) at provision / **Connectors**
 2. Customer Global Admin opens **Open admin consent** on `/connectors`
 3. Consent health → `healthy`; directory snapshots run for leaver emails on case detail
-4. Optional: enable **Graph auto-evidence** to attach hashed JSON snapshots to the IdP disable checklist step (`evidence.auto_collected`)
+4. Optional: enable **Graph / AD auto-evidence** to attach hashed snapshots to auto-mapped FedRAMP/CMMC steps (`evidence.auto_collected`). Critical steps still require human attest (`require_human_attest_on_critical`).
 
-**DEMO_MODE:** no Graph credentials required. Seed org has healthy consent + auto-evidence; case `jordan.lee@northwind.example` shows **Entra still enabled** via `DemoGraphClient`. Use **Simulate consent** / **Refresh Graph snapshot** on Connectors and case detail.
+**DEMO_MODE:** no Graph credentials required. Seed org has healthy consent + auto-evidence; case `jordan.lee@northwind.example` shows **Entra still enabled** via `DemoGraphClient`, hybrid AD mismatch, and **Phase 5** pre-seeded system-collected Graph/AD evidence on critical steps that remain pending until human attest (ticket or upload). Evidence Pack PDF is **v3** (System-collected vs Human-attached). Use **Simulate consent** / **Refresh Graph snapshot** on Connectors and case detail.
 
 See `lib/connectors/graph/`, migration `007_graph_connector.sql`, [ADR-002](docs/adr/002-graph-readonly-and-ad-connector.md).
 

@@ -1,8 +1,10 @@
 /**
  * Optional auto-evidence from a Graph directory snapshot (hashed JSON).
  * Labeled system-collected — never claims certification / IdP revoke.
+ * Targets checklist steps via Phase 5 per-framework auto-map.
  */
 
+import { mapSignalToChecklistItem } from "@/lib/evidence/auto-map";
 import { sha256Hex } from "@/lib/evidence/hash";
 import type { DirectorySnapshot } from "@/lib/connectors/graph/types";
 import type { ChecklistItem, EvidenceFile, SessionUser } from "@/lib/types";
@@ -19,10 +21,21 @@ export interface AutoEvidenceAttachResult {
   mimeType?: string;
 }
 
-/** Prefer Identity "Disable …" critical step; else first critical + requires_evidence. */
+/**
+ * Map Graph snapshot → FedRAMP/CMMC disable-account step (and peers).
+ * Falls back to legacy Identity "Disable …" heuristics when auto-map misses.
+ */
 export function pickAutoEvidenceTarget(
   items: ChecklistItem[],
+  opts?: { selectedFrameworks?: string[] },
 ): ChecklistItem | null {
+  const mapped = mapSignalToChecklistItem(
+    "graph_directory_snapshot",
+    items,
+    opts,
+  );
+  if (mapped) return mapped;
+
   const sorted = [...items].sort((a, b) => a.sort_order - b.sort_order);
   const disableStep = sorted.find(
     (i) =>
@@ -83,6 +96,7 @@ export interface AttachGraphAutoEvidenceDeps {
   existingEvidence: EvidenceFile[];
   snapshot: DirectorySnapshot;
   autoEvidenceEnabled: boolean;
+  selectedFrameworks?: string[];
   /** Persist evidence; demo or live upload path. */
   persist: (input: {
     itemId: string;
@@ -101,6 +115,7 @@ export interface AttachGraphAutoEvidenceDeps {
 /**
  * Attach hashed Graph snapshot JSON when tenant flag is on and no prior
  * system-collected graph evidence exists on the mapped step.
+ * Does not mark the step done — critical steps still need human attest.
  */
 export async function attachGraphAutoEvidence(
   deps: AttachGraphAutoEvidenceDeps,
@@ -109,7 +124,9 @@ export async function attachGraphAutoEvidence(
     return { attached: false, skippedReason: "auto_evidence_enabled is false" };
   }
 
-  const target = pickAutoEvidenceTarget(deps.items);
+  const target = pickAutoEvidenceTarget(deps.items, {
+    selectedFrameworks: deps.selectedFrameworks,
+  });
   if (!target) {
     return { attached: false, skippedReason: "no suitable checklist step" };
   }

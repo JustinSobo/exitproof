@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { canCreateClientOrg, canCreateOffboard, normalizeMonthlyUsage } from "@/lib/billing/gates";
 import { PLANS } from "@/lib/billing/plans";
 import {
@@ -19,6 +19,9 @@ import {
   hybridMismatchMessage,
 } from "@/lib/connectors/ad";
 import { hashRegistrationToken } from "@/lib/connectors/ad-auth";
+import { buildAdEvidenceCsv } from "@/lib/connectors/ad-auto-evidence";
+import { mapAdAutoEvidenceTarget, mapSignalToChecklistItem } from "@/lib/evidence/auto-map";
+import { resolveAutoEvidencePolicy } from "@/lib/evidence/policy";
 import { effectiveJitStatus } from "@/lib/operator/jit";
 import type { JitAccessGrant, OperatorStaff } from "@/lib/operator/types";
 import type {
@@ -127,6 +130,7 @@ function seedDemoIfNeeded(state: DemoState) {
     auto_evidence_enabled: true,
     hybrid_ad_enabled: true,
     ad_auto_evidence_enabled: true,
+    require_human_attest_on_critical: true,
   };
   state.orgs.push(org);
   state.members.push({
@@ -172,6 +176,7 @@ function seedDemoIfNeeded(state: DemoState) {
     auto_evidence_enabled: false,
     hybrid_ad_enabled: false,
     ad_auto_evidence_enabled: false,
+    require_human_attest_on_critical: true,
   };
   state.orgs.push(contoso);
 
@@ -206,11 +211,12 @@ function seedDemoIfNeeded(state: DemoState) {
       description: step.description,
       requires_evidence: step.requires_evidence,
       is_critical: step.is_critical,
-      status: step.sort_order === 1 ? "done" : "pending",
-      notes: step.sort_order === 1 ? "Completed in demo seed." : null,
+      // Phase 5: leave critical IdP step pending — system evidence alone cannot close it.
+      status: "pending",
+      notes: null,
       ticket_url: null,
-      completed_at: step.sort_order === 1 ? new Date().toISOString() : null,
-      completed_by: step.sort_order === 1 ? user.email : null,
+      completed_at: null,
+      completed_by: null,
       sort_order: step.sort_order,
       category: step.category,
       evidence_hint: step.evidenceHint ?? null,
@@ -290,6 +296,111 @@ function seedDemoIfNeeded(state: DemoState) {
         cloud_account_enabled: cloudAccountEnabled,
         ad_account_enabled: adEnabled,
         demo: true,
+      },
+      created_at: new Date().toISOString(),
+    });
+  }
+
+  // Phase 5 DEMO: attach system-collected Graph + AD evidence on auto-mapped
+  // critical steps — leave steps pending so human attest policy is visible.
+  const caseItems = state.items.filter((i) => i.case_id === caseId);
+  const frameworks = org.selected_frameworks ?? [];
+  const graphTarget = mapSignalToChecklistItem(
+    "graph_directory_snapshot",
+    caseItems,
+    { selectedFrameworks: frameworks },
+  );
+  if (graphTarget) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const graphBody = {
+      kind: "system_collected_graph_snapshot",
+      label: "System-collected directory snapshot (Microsoft Graph read-only)",
+      disclaimer:
+        "This evidence is a point-in-time read of directory state. It does not certify that access was revoked.",
+      capturedAt: new Date().toISOString(),
+      source: "demo",
+      queriedEmail: "jordan.lee@northwind.example",
+      accountStillEnabled: true,
+      note: "DEMO_MODE Phase 5: system-collected; human attest still required.",
+    };
+    const graphBytes = Buffer.from(JSON.stringify(graphBody, null, 2), "utf8");
+    const graphHash = createHash("sha256").update(graphBytes).digest("hex");
+    const graphFile = `graph-snapshot-${stamp}.json`;
+    state.evidence.push({
+      id: "demo-ev-graph-1",
+      checklist_item_id: graphTarget.id,
+      case_id: caseId,
+      org_id: org.id,
+      file_name: graphFile,
+      storage_path: `tenants/${org.id}/graph-auto/${caseId}/${graphFile}`,
+      uploaded_by: "system:graph",
+      created_at: new Date().toISOString(),
+      content_hash: graphHash,
+      mime_type: "application/json",
+      byte_size: graphBytes.byteLength,
+      collection_source: "system:graph",
+    });
+    graphTarget.notes =
+      "DEMO: System-collected Graph snapshot attached — human attest (ticket or upload) still required before Mark done.";
+    state.audits.push({
+      id: randomUUID(),
+      org_id: org.id,
+      case_id: caseId,
+      actor_id: null,
+      actor_email: "system",
+      event_type: "evidence.auto_collected",
+      payload: {
+        item_id: graphTarget.id,
+        file_name: graphFile,
+        content_hash: graphHash,
+        source: "graph",
+        label: "system-collected snapshot",
+        demo: true,
+        phase: 5,
+      },
+      created_at: new Date().toISOString(),
+    });
+  }
+
+  const adTarget = mapAdAutoEvidenceTarget(caseItems, {
+    selectedFrameworks: frameworks,
+  });
+  const adSnap = state.adSnapshots[state.adSnapshots.length - 1];
+  if (adTarget && adSnap) {
+    const built = buildAdEvidenceCsv(adSnap);
+    state.evidence.push({
+      id: "demo-ev-ad-1",
+      checklist_item_id: adTarget.id,
+      case_id: caseId,
+      org_id: org.id,
+      file_name: built.file_name,
+      storage_path: `tenants/${org.id}/ad-auto/${caseId}/${built.file_name}`,
+      uploaded_by: "system:ad",
+      created_at: new Date().toISOString(),
+      content_hash: built.content_hash,
+      mime_type: built.mimeType,
+      byte_size: built.bytes.byteLength,
+      collection_source: "system:ad",
+    });
+    if (!adTarget.notes) {
+      adTarget.notes =
+        "DEMO: System-collected AD export attached — human attest still required on this critical step.";
+    }
+    state.audits.push({
+      id: randomUUID(),
+      org_id: org.id,
+      case_id: caseId,
+      actor_id: null,
+      actor_email: "system",
+      event_type: "evidence.auto_collected",
+      payload: {
+        item_id: adTarget.id,
+        file_name: built.file_name,
+        content_hash: built.content_hash,
+        source: "ad",
+        label: "system-collected snapshot",
+        demo: true,
+        phase: 5,
       },
       created_at: new Date().toISOString(),
     });
@@ -496,6 +607,7 @@ export const demoStore = {
         | "auto_evidence_enabled"
         | "hybrid_ad_enabled"
         | "ad_auto_evidence_enabled"
+        | "require_human_attest_on_critical"
       >
     >,
   ) {
@@ -710,10 +822,15 @@ export const demoStore = {
     if (!c) throw new Error("Case not found");
 
     if (patch.status === "done") {
+      const org = state.orgs.find((o) => o.id === c.org_id);
+      const policy = resolveAutoEvidencePolicy(org ?? {});
       assertCanCompleteItem(
         item,
         state.evidence.filter((e) => e.case_id === c.id),
-        patch.ticket_url,
+        {
+          ticketUrlOverride: patch.ticket_url,
+          requireHumanAttestOnCritical: policy.requireHumanAttestOnCritical,
+        },
       );
     }
 
@@ -774,6 +891,7 @@ export const demoStore = {
       content_hash: meta?.contentHash ?? null,
       mime_type: meta?.mimeType ?? null,
       byte_size: meta?.byteSize ?? null,
+      collection_source: "human",
     };
     state.evidence.push(evidence);
 
@@ -827,6 +945,7 @@ export const demoStore = {
       content_hash: meta.contentHash,
       mime_type: meta.mimeType,
       byte_size: meta.byteSize,
+      collection_source: meta.source === "graph" ? "system:graph" : "system:ad",
     };
     state.evidence.push(evidence);
 
@@ -1453,6 +1572,7 @@ export const demoStore = {
       auto_evidence_enabled: false,
       hybrid_ad_enabled: false,
       ad_auto_evidence_enabled: false,
+      require_human_attest_on_critical: true,
     };
     state.orgs.push(org);
 
