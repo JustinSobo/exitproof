@@ -3,8 +3,9 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { OnboardingBanner } from "@/components/app/onboarding-banner";
 import { signOutAction } from "@/lib/actions/auth";
-import { getCurrentOrg } from "@/lib/auth";
+import { getCurrentOrg, getSessionUser } from "@/lib/auth";
 import { isDemoMode } from "@/lib/env";
+import { isOperatorUser } from "@/lib/operator/auth";
 import { needsOnboarding } from "@/lib/onboarding/questionnaire";
 
 /** Primary IA — New offboard is a Cases page CTA, not a nav item. */
@@ -22,8 +23,16 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const user = await getSessionUser();
+  if (!user) redirect("/auth/login");
+
   const ctx = await getCurrentOrg();
-  if (!ctx) redirect("/auth/login");
+  if (!ctx) {
+    if (await isOperatorUser(user)) redirect("/operator");
+    redirect("/auth/login");
+  }
+
+  const showOperator = await isOperatorUser(ctx.user);
 
   const headerList = await headers();
   const pathname = headerList.get("x-pathname") ?? "";
@@ -34,6 +43,10 @@ export default async function AppLayout({
   if (needsOnboarding(ctx.org) && !onOnboarding) {
     redirect("/onboarding");
   }
+
+  const navLinks = showOperator
+    ? [...links, { href: "/operator", label: "Operator" }]
+    : links;
 
   return (
     <div className="ep-atmosphere min-h-screen text-[var(--mist)]">
@@ -51,7 +64,7 @@ export default async function AppLayout({
             {isDemoMode() ? " · demo" : ""}
           </p>
           <nav className="mt-8 space-y-1 text-sm">
-            {links.map((l) => (
+            {navLinks.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
@@ -95,7 +108,7 @@ export default async function AppLayout({
               </form>
             </div>
             <nav className="-mx-1 mt-3 flex gap-1 overflow-x-auto pb-1 text-xs md:hidden">
-              {links.map((l) => (
+              {navLinks.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}

@@ -66,13 +66,15 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     id: "agency",
     name: "Agency",
     priceMonthly: 249,
-    tagline: "MSP / agency multi-tenant with client orgs",
+    tagline:
+      "Legacy MSP multi-tenant (parent/child). GridLogic operator model is preferred for new managed sales.",
     features: [
       "Parent org + up to 25 client orgs",
       "Unlimited offboards across clients",
-      "Per-client isolation (RLS)",
+      "Per-client RLS (legacy boundary)",
       "365-day retention",
       "Agency billing portal",
+      "Not the GridLogic security boundary — use /operator + JIT",
     ],
     offboardLimit: null,
     maxClientOrgs: 25,

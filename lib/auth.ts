@@ -87,9 +87,34 @@ export function normalizeOrganization(raw: Record<string, unknown>): Organizatio
       ? (raw.selected_frameworks as string[])
       : [],
     entra_tenant_id: (raw.entra_tenant_id as string | null) ?? null,
+    sso_enforced: Boolean(raw.sso_enforced),
     onboarding_completed_at:
       (raw.onboarding_completed_at as string | null) ?? null,
+    graph_consent_status: normalizeGraphConsentStatus(
+      raw.graph_consent_status,
+    ),
+    graph_consented_at: (raw.graph_consented_at as string | null) ?? null,
+    graph_last_sync_at: (raw.graph_last_sync_at as string | null) ?? null,
+    auto_evidence_enabled: Boolean(raw.auto_evidence_enabled),
+    hybrid_ad_enabled: Boolean(raw.hybrid_ad_enabled),
+    ad_auto_evidence_enabled: Boolean(raw.ad_auto_evidence_enabled),
   };
+}
+
+function normalizeGraphConsentStatus(
+  value: unknown,
+): Organization["graph_consent_status"] {
+  const allowed = new Set([
+    "not_started",
+    "pending",
+    "healthy",
+    "revoked",
+    "error",
+  ]);
+  if (typeof value === "string" && allowed.has(value)) {
+    return value as Organization["graph_consent_status"];
+  }
+  return "not_started";
 }
 
 /** Session-scoped tenant_id — never accept this from client body alone. */

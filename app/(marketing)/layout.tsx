@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { enterDemoAction } from "@/lib/actions/auth";
 import { isDemoMode } from "@/lib/env";
+import { Button, ButtonLink } from "@/components/ui/button";
 
 export default function MarketingLayout({
   children,
@@ -13,38 +14,38 @@ export default function MarketingLayout({
     <div className="ep-atmosphere relative min-h-screen text-[var(--mist)]">
       <div className="ep-grid pointer-events-none absolute inset-0" />
       <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <Link href="/" className="font-[family-name:var(--font-syne)] text-2xl font-800 tracking-tight">
+        <Link
+          href="/"
+          className="font-[family-name:var(--font-syne)] text-2xl font-800 tracking-tight"
+        >
           Exit<span className="text-[var(--teal-bright)]">Proof</span>
         </Link>
-        <nav className="flex items-center gap-3 text-sm">
-          <Link href="/#how" className="hidden text-[var(--fog)] hover:text-white sm:inline">
+        <nav className="flex items-center gap-2 text-sm sm:gap-3">
+          <Link
+            href="/#how"
+            className="hidden rounded-md px-2 py-2 text-[var(--fog)] hover:text-white sm:inline"
+          >
             How it works
           </Link>
-          <Link href="/#pricing" className="hidden text-[var(--fog)] hover:text-white sm:inline">
+          <Link
+            href="/#pricing"
+            className="hidden rounded-md px-2 py-2 text-[var(--fog)] hover:text-white sm:inline"
+          >
             Pricing
           </Link>
-          <Link
-            href="/auth/login"
-            className="rounded-md px-3 py-2 text-[var(--fog)] hover:text-white"
-          >
+          <ButtonLink href="/auth/login" variant="ghost" size="sm">
             Sign in
-          </Link>
+          </ButtonLink>
           {demo ? (
             <form action={enterDemoAction}>
-              <button
-                type="submit"
-                className="rounded-md border border-[var(--line)] bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
-              >
+              <Button type="submit" variant="secondary" size="sm">
                 Try demo
-              </button>
+              </Button>
             </form>
           ) : null}
-          <Link
-            href="/auth/signup"
-            className="rounded-md bg-[var(--teal)] px-3.5 py-2 font-medium text-[#04201d] hover:bg-[var(--teal-bright)]"
-          >
+          <ButtonLink href="/auth/signup" size="sm">
             Start free
-          </Link>
+          </ButtonLink>
         </nav>
       </header>
       <main className="relative z-10 flex-1">{children}</main>

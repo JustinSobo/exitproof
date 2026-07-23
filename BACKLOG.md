@@ -58,8 +58,8 @@ Scored by leverage. Prefer unresolved security > broken/false advertising > comp
 
 - [x] **H1** Phase 1 foundation: IaC stubs, tenant_id, kill silent domain JIT, provision checklist CLI, DEMO_MODE harden (this iteration)
 - [ ] **H2** Phase 2: GridLogic operator console, JIT staff access, onboard wizard, audited org switcher
-- [ ] **H3** Phase 3: Graph read-only connector + consent
-- [ ] **H4** Phase 4: Hybrid AD connector
+- [x] **H3** Phase 3: Graph read-only connector + consent (`lib/connectors/graph/`, `/connectors`, migration `007_graph_connector.sql`, case Entra mismatch + optional auto-evidence)
+- [x] **H4** Phase 4 foundation: Hybrid AD connector skeleton (`apps/connector`), protocol docs, register/heartbeat/snapshot APIs, case AD status + mismatch UI, migration `009_ad_connector.sql`
 - [ ] **H5** Live Azure deploy (Container Apps + SQL + Blob + KV) beyond Bicep stubs
 
 ## Pillar F — UX/UI (score 1)

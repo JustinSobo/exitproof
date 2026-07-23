@@ -7,7 +7,15 @@ import {
   updateChecklistAction,
 } from "@/lib/actions/cases";
 import { EvidencePreview } from "@/components/app/evidence-preview";
+import { CaseDirectoryStatusPanel } from "@/components/app/case-directory-status";
+import { GraphEntraMismatchBanner } from "@/components/app/graph-entra-mismatch";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { buttonClassName } from "@/components/ui/button";
+import { fieldControlClass } from "@/components/ui/field";
 import { controlChipLabel, resolveControlRefs } from "@/lib/compliance";
+import type { CaseDirectoryStatus } from "@/lib/connectors/ad";
+import type { DirectorySnapshot } from "@/lib/connectors/graph";
 import type {
   AuditEvent,
   CaseStatus,
@@ -49,11 +57,15 @@ export function CaseDetailClient({
   items: initialItems,
   evidence: initialEvidence,
   audits,
+  directoryStatus = null,
+  graphSnapshot = null,
 }: {
   offboardingCase: OffboardingCase;
   items: ChecklistItem[];
   evidence: EvidenceFile[];
   audits: AuditEvent[];
+  directoryStatus?: CaseDirectoryStatus | null;
+  graphSnapshot?: DirectorySnapshot | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -171,14 +183,10 @@ export function CaseDetailClient({
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="font-medium text-white">{item.title}</h3>
               {item.is_critical ? (
-                <span className="rounded bg-[var(--danger)]/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-[#ffb4ae]">
-                  Critical
-                </span>
+                <Badge variant="danger">Critical</Badge>
               ) : null}
               {item.requires_evidence ? (
-                <span className="rounded bg-[var(--amber)]/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-[var(--amber)]">
-                  Evidence required
-                </span>
+                <Badge variant="amber">Evidence required</Badge>
               ) : null}
               {files.length > 0 ? (
                 <span className="text-[10px] text-[var(--fog)]">
@@ -187,15 +195,16 @@ export function CaseDetailClient({
               ) : null}
             </div>
             {controls.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-2 flex flex-wrap gap-1.5" aria-label="Control mappings">
                 {controls.map((ctrl) => (
-                  <span
+                  <Badge
                     key={ctrl.key}
+                    variant="control"
                     title={ctrl.guidance}
-                    className="rounded border border-[var(--line)] bg-black/25 px-1.5 py-0.5 text-[10px] text-[var(--teal-bright)]"
+                    className="normal-case tracking-normal"
                   >
                     {controlChipLabel(ctrl)}
-                  </span>
+                  </Badge>
                 ))}
                 {(item.control_refs?.length ?? 0) > controls.length ? (
                   <span className="text-[10px] text-[var(--fog)]">
@@ -209,19 +218,28 @@ export function CaseDetailClient({
             <button
               type="button"
               onClick={() => toggleDetails(item.id)}
-              className="rounded-md border border-[var(--line)] px-2.5 py-1.5 text-xs text-[var(--fog)] hover:bg-white/5 hover:text-white"
+              className={buttonClassName({
+                variant: "ghost",
+                size: "sm",
+                className: "border border-[var(--line)]",
+              })}
               aria-expanded={detailsOpen}
+              aria-controls={`item-details-${item.id}`}
             >
               {detailsOpen ? "Hide details" : "Details"}
             </button>
             <button
               type="button"
               onClick={() => markDone(item)}
-              className={`rounded-md px-3 py-1.5 text-sm ${
-                item.status === "done"
-                  ? "bg-[var(--teal)]/20 text-[var(--teal-bright)]"
-                  : "border border-[var(--line)] hover:bg-white/5"
-              }`}
+              aria-pressed={item.status === "done"}
+              className={buttonClassName({
+                variant: item.status === "done" ? "primary" : "secondary",
+                size: "sm",
+                className:
+                  item.status === "done"
+                    ? "bg-[var(--teal)]/25 text-[var(--teal-bright)] hover:bg-[var(--teal)]/35"
+                    : undefined,
+              })}
             >
               {item.status === "done" ? "Done" : "Mark done"}
             </button>
@@ -229,11 +247,12 @@ export function CaseDetailClient({
         </div>
 
         {detailsOpen ? (
-          <div className="mt-3 space-y-3">
+          <div id={`item-details-${item.id}`} className="mt-3 space-y-3">
             <p className="text-sm text-[var(--fog)]">{item.description}</p>
             {item.evidence_hint ? (
-              <p className="text-xs text-[var(--fog)]">
-                Evidence hint: {item.evidence_hint}
+              <p className="rounded-md border border-[var(--line)] bg-black/15 px-3 py-2 text-xs text-[var(--fog)]">
+                <span className="font-medium text-[var(--mist)]">Evidence hint:</span>{" "}
+                {item.evidence_hint}
               </p>
             ) : null}
 
@@ -243,7 +262,7 @@ export function CaseDetailClient({
                 <textarea
                   defaultValue={item.notes ?? ""}
                   rows={2}
-                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-black/20 px-2 py-1.5 text-sm text-white"
+                  className={fieldControlClass}
                   onBlur={(e) =>
                     saveMeta(item, e.target.value, item.ticket_url ?? "")
                   }
@@ -253,7 +272,7 @@ export function CaseDetailClient({
                 Ticket URL
                 <input
                   defaultValue={item.ticket_url ?? ""}
-                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-black/20 px-2 py-1.5 text-sm text-white"
+                  className={fieldControlClass}
                   onBlur={(e) =>
                     saveMeta(item, item.notes ?? "", e.target.value)
                   }
@@ -262,12 +281,18 @@ export function CaseDetailClient({
             </div>
 
             <div className="space-y-3 text-sm">
-              <label className="inline-flex cursor-pointer rounded-md border border-[var(--line)] px-3 py-1.5 hover:bg-white/5">
+              <label
+                className={buttonClassName({
+                  variant: "secondary",
+                  size: "sm",
+                  className: "cursor-pointer",
+                })}
+              >
                 Upload evidence
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp,application/pdf,.png,.jpg,.jpeg,.webp,.pdf"
-                  className="hidden"
+                  className="sr-only"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) void uploadEvidence(item.id, file);
@@ -294,7 +319,7 @@ export function CaseDetailClient({
       <div className="sticky top-0 z-20 -mx-4 border-b border-[var(--line)] bg-[#07161f]/95 px-4 py-4 backdrop-blur-md md:-mx-8 md:px-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="font-[family-name:var(--font-syne)] text-2xl font-700 text-white sm:text-3xl">
+            <h1 className="font-[family-name:var(--font-syne)] text-2xl font-700 tracking-tight text-white sm:text-3xl">
               {offboardingCase.employee_name}
             </h1>
             <p className="mt-1 truncate text-sm text-[var(--fog)]">
@@ -315,18 +340,29 @@ export function CaseDetailClient({
               </span>
               <span>Due {offboardingCase.due_date || "—"}</span>
             </div>
-            <div className="mt-2 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-white/10">
+            <div
+              className="mt-2 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-white/10"
+              role="progressbar"
+              aria-valuenow={progressPct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Checklist progress"
+            >
               <div
-                className="h-full rounded-full bg-[var(--teal)] transition-[width]"
+                className="h-full rounded-full bg-[var(--teal)] transition-[width] duration-300 ease-out"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <label className="sr-only" htmlFor="case-status">
+              Case status
+            </label>
             <select
+              id="case-status"
               value={status}
               onChange={(e) => onStatusChange(e.target.value as CaseStatus)}
-              className="rounded-md border border-[var(--line)] bg-black/30 px-3 py-2 text-sm capitalize text-white"
+              className={`${fieldControlClass} mt-0 w-auto capitalize`}
               disabled={pending}
             >
               {STATUSES.map((s) => (
@@ -335,10 +371,14 @@ export function CaseDetailClient({
                 </option>
               ))}
             </select>
+            <label className="sr-only" htmlFor="export-framework">
+              Export framework filter
+            </label>
             <select
+              id="export-framework"
               value={exportFw}
               onChange={(e) => setExportFw(e.target.value)}
-              className="rounded-md border border-[var(--line)] bg-black/30 px-3 py-2 text-sm text-white"
+              className={`${fieldControlClass} mt-0 w-auto`}
               aria-label="Export framework filter"
             >
               {EXPORT_FRAMEWORKS.map((f) => (
@@ -347,25 +387,48 @@ export function CaseDetailClient({
                 </option>
               ))}
             </select>
-            <a
-              href={`/api/export/${offboardingCase.id}/pdf${fwQuery}`}
-              className="rounded-md bg-[var(--teal)] px-3 py-2 text-sm font-semibold text-[#04201d]"
-            >
-              Export PDF
-            </a>
-            <a
-              href={`/api/export/${offboardingCase.id}/csv${fwQuery}`}
-              className="rounded-md border border-[var(--line)] px-3 py-2 text-sm hover:bg-white/5"
-            >
-              Export CSV
-            </a>
+            <details className="relative">
+              <summary
+                className={buttonClassName({
+                  variant: "primary",
+                  size: "md",
+                  className:
+                    "list-none marker:content-none [&::-webkit-details-marker]:hidden",
+                })}
+              >
+                Export
+              </summary>
+              <div className="absolute right-0 z-30 mt-2 min-w-[10rem] rounded-md border border-[var(--line)] bg-[#0b2430] p-1 shadow-xl">
+                <a
+                  href={`/api/export/${offboardingCase.id}/pdf${fwQuery}`}
+                  className="block rounded px-3 py-2 text-sm text-white hover:bg-white/10"
+                >
+                  PDF pack
+                </a>
+                <a
+                  href={`/api/export/${offboardingCase.id}/csv${fwQuery}`}
+                  className="block rounded px-3 py-2 text-sm text-white hover:bg-white/10"
+                >
+                  CSV export
+                </a>
+              </div>
+            </details>
           </div>
         </div>
       </div>
 
       {message ? (
-        <p className="text-sm text-[var(--teal-bright)]">{message}</p>
+        <Alert variant="success" className="py-2">
+          {message}
+        </Alert>
       ) : null}
+
+      <GraphEntraMismatchBanner
+        caseId={offboardingCase.id}
+        initialSnapshot={graphSnapshot}
+      />
+
+      <CaseDirectoryStatusPanel status={directoryStatus ?? null} />
 
       <section className="space-y-8">
         <h2 className="sr-only">Checklist</h2>

@@ -4,24 +4,12 @@ import {
   signInWithMicrosoftAction,
 } from "@/lib/actions/auth";
 import { isDemoMode } from "@/lib/env";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { FieldLabel, Input } from "@/components/ui/field";
+import { MicrosoftIcon } from "@/components/ui/microsoft-icon";
 
 export const metadata = { title: "Sign in" };
-
-function MicrosoftIcon() {
-  return (
-    <svg
-      aria-hidden
-      className="h-4 w-4 shrink-0"
-      viewBox="0 0 21 21"
-      fill="none"
-    >
-      <rect x="1" y="1" width="9" height="9" fill="#F25022" />
-      <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
-      <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
-      <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
-    </svg>
-  );
-}
 
 export default async function LoginPage({
   searchParams,
@@ -40,7 +28,7 @@ export default async function LoginPage({
 
   return (
     <div className="ep-atmosphere flex min-h-screen items-center justify-center px-6 py-16">
-      <div className="w-full max-w-md rounded-2xl border border-[var(--line)] bg-[#0b2430]/80 p-8 shadow-2xl backdrop-blur">
+      <div className="ep-rise w-full max-w-md rounded-2xl border border-[var(--line)] bg-[#0b2430]/80 p-8 shadow-2xl backdrop-blur">
         <Link
           href="/"
           className="font-[family-name:var(--font-syne)] text-2xl font-800 text-white"
@@ -51,80 +39,73 @@ export default async function LoginPage({
           Sign in
         </h1>
         {demo ? (
-          <p className="mt-2 text-sm text-[var(--fog)]">
+          <p className="mt-2 text-sm leading-relaxed text-[var(--fog)]">
             Demo mode is on. Use{" "}
             <code className="text-[var(--teal-bright)]">demo@exitproof.app</code>{" "}
             / <code className="text-[var(--teal-bright)]">demo1234</code> or any
             new signup. Microsoft Entra SSO is hidden in demo.
           </p>
         ) : (
-          <p className="mt-2 text-sm text-[var(--fog)]">
+          <p className="mt-2 text-sm leading-relaxed text-[var(--fog)]">
             Sign in with Microsoft Entra ID. Email/password remains available as
             break-glass.
           </p>
         )}
         {error ? (
-          <p className="mt-3 text-sm text-[var(--danger)]" role="alert">
+          <Alert variant="danger" className="mt-4">
             {error}
-          </p>
+          </Alert>
         ) : null}
         {message ? (
-          <p className="mt-3 text-sm text-[var(--teal-bright)]" role="status">
+          <Alert variant="success" className="mt-4">
             {message}
-          </p>
+          </Alert>
         ) : null}
 
         {!demo ? (
           <form action={signInWithMicrosoftAction} className="mt-6">
             <input type="hidden" name="return_to" value="/auth/login" />
-            <button
-              type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-[var(--teal)] py-2.5 text-sm font-semibold text-[#04201d] hover:bg-[var(--teal-bright)]"
-            >
+            <Button type="submit" className="w-full" size="lg">
               <MicrosoftIcon />
               Continue with Microsoft
-            </button>
+            </Button>
           </form>
         ) : null}
 
         <form action={signInAction} className={demo ? "mt-6 space-y-4" : "mt-4"}>
           {demo ? (
             <>
-              <label className="block text-sm">
-                <span className="text-[var(--fog)]">Email</span>
-                <input
+              <FieldLabel>
+                Email
+                <Input
                   name="email"
                   type="email"
                   required
+                  autoComplete="username"
                   defaultValue="demo@exitproof.app"
-                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-white outline-none focus:border-[var(--teal)]"
                 />
-              </label>
-              <label className="block text-sm">
-                <span className="text-[var(--fog)]">Password</span>
-                <input
+              </FieldLabel>
+              <FieldLabel>
+                Password
+                <Input
                   name="password"
                   type="password"
+                  autoComplete="current-password"
                   defaultValue="demo1234"
-                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-white outline-none focus:border-[var(--teal)]"
                 />
-              </label>
-              <button
-                type="submit"
-                name="mode"
-                value="password"
-                className="w-full rounded-md bg-[var(--teal)] py-2.5 text-sm font-semibold text-[#04201d] hover:bg-[var(--teal-bright)]"
-              >
+              </FieldLabel>
+              <Button type="submit" name="mode" value="password" className="w-full">
                 Sign in
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 name="mode"
                 value="magic"
-                className="w-full rounded-md border border-[var(--line)] py-2.5 text-sm hover:bg-white/5"
+                variant="secondary"
+                className="w-full"
               >
                 Email magic link
-              </button>
+              </Button>
             </>
           ) : (
             <details className="group rounded-md border border-[var(--line)] open:bg-black/10">
@@ -137,39 +118,41 @@ export default async function LoginPage({
                 </span>
               </summary>
               <div className="space-y-4 border-t border-[var(--line)] px-3 py-4">
-                <label className="block text-sm">
-                  <span className="text-[var(--fog)]">Email</span>
-                  <input
+                <FieldLabel>
+                  Email
+                  <Input
                     name="email"
                     type="email"
                     required
-                    className="mt-1 w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-white outline-none focus:border-[var(--teal)]"
+                    autoComplete="username"
                   />
-                </label>
-                <label className="block text-sm">
-                  <span className="text-[var(--fog)]">Password</span>
-                  <input
+                </FieldLabel>
+                <FieldLabel>
+                  Password
+                  <Input
                     name="password"
                     type="password"
-                    className="mt-1 w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-white outline-none focus:border-[var(--teal)]"
+                    autoComplete="current-password"
                   />
-                </label>
-                <button
+                </FieldLabel>
+                <Button
                   type="submit"
                   name="mode"
                   value="password"
-                  className="w-full rounded-md border border-[var(--line)] py-2.5 text-sm font-semibold hover:bg-white/5"
+                  variant="secondary"
+                  className="w-full"
                 >
                   Sign in with password
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   name="mode"
                   value="magic"
-                  className="w-full rounded-md border border-[var(--line)] py-2.5 text-sm hover:bg-white/5"
+                  variant="ghost"
+                  className="w-full border border-[var(--line)]"
                 >
                   Email magic link
-                </button>
+                </Button>
               </div>
             </details>
           )}
@@ -177,7 +160,7 @@ export default async function LoginPage({
 
         <p className="mt-6 text-sm text-[var(--fog)]">
           No account?{" "}
-          <Link href="/auth/signup" className="text-[var(--teal-bright)]">
+          <Link href="/auth/signup" className="text-[var(--teal-bright)] hover:underline">
             Start free
           </Link>
         </p>

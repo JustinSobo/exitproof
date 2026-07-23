@@ -9,6 +9,9 @@ import {
   postureForSelectedFrameworks,
   type CaseCoverageInput,
 } from "@/lib/compliance";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentOrg } from "@/lib/auth";
 import { listCasesForOrg } from "@/lib/cases/list";
 import { demoStore } from "@/lib/demo/store";
@@ -75,34 +78,34 @@ export default async function CompliancePage() {
 
   return (
     <div className="space-y-10">
-      <div>
-        <h1 className="font-[family-name:var(--font-syne)] text-3xl font-700 text-white">
-          Compliance posture
-        </h1>
-        <p className="mt-2 max-w-2xl text-[var(--fog)]">
-          Coverage from sampled offboarding cases mapped to your selected
-          frameworks. ExitProof{" "}
-          <span className="text-white">supports evidence for</span> these
-          controls — it does not guarantee certification, attestation, or
-          FedRAMP authorization.
-        </p>
-      </div>
+      <PageHeader
+        title="Compliance posture"
+        description={
+          <>
+            Coverage from sampled offboarding cases mapped to your selected
+            frameworks. ExitProof{" "}
+            <span className="text-white">supports evidence for</span> these
+            controls — it does not guarantee certification, attestation, or
+            FedRAMP authorization.
+          </>
+        }
+      />
 
       {selected.length === 0 ? (
-        <div className="rounded-xl border border-[var(--amber)]/40 bg-[var(--amber)]/10 px-4 py-3 text-sm">
+        <Alert variant="warning">
           No frameworks selected yet.{" "}
-          <Link href="/onboarding?edit=1" className="font-semibold text-[var(--amber)]">
+          <Link
+            href="/onboarding?edit=1"
+            className="font-semibold text-[var(--amber)] hover:underline"
+          >
             Run onboarding →
           </Link>
-        </div>
+        </Alert>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {posture.map((p) => (
-            <div
-              key={p.slug}
-              className="rounded-xl border border-[var(--line)] bg-white/[0.04] p-5"
-            >
-              <p className="text-xs uppercase tracking-wider text-[var(--fog)]">
+            <div key={p.slug} className="ep-panel p-5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--fog)]">
                 {p.name}
               </p>
               <p className="mt-2 font-[family-name:var(--font-syne)] text-3xl text-white">
@@ -145,9 +148,12 @@ export default async function CompliancePage() {
                 {controls.map((ctrl) => (
                   <li key={ctrl.key} className="px-4 py-3 text-sm">
                     <div className="flex flex-wrap items-baseline gap-2">
-                      <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-xs text-[var(--teal-bright)]">
+                      <Badge
+                        variant="control"
+                        className="normal-case tracking-normal"
+                      >
                         {controlChipLabel(ctrl)}
-                      </span>
+                      </Badge>
                       <span className="font-medium text-white">{ctrl.title}</span>
                     </div>
                     <p className="mt-1 text-[var(--fog)]">{ctrl.guidance}</p>

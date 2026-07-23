@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { completeOnboardingAction } from "@/lib/actions/onboarding";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 import { FRAMEWORKS, type FrameworkSlug } from "@/lib/compliance/frameworks";
 import {
   DEFAULT_ONBOARDING_FRAMEWORKS,
@@ -66,11 +68,7 @@ export function OnboardingWizard({
         </p>
       </div>
 
-      {error ? (
-        <div className="rounded-xl border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-4 py-3 text-sm">
-          {error}
-        </div>
-      ) : null}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <form action={completeOnboardingAction} className="space-y-6">
         {/* Always submit current selections */}
@@ -157,33 +155,25 @@ export function OnboardingWizard({
 
         <div className="flex items-center justify-between gap-3 pt-2">
           {step > 0 ? (
-            <button
-              type="button"
-              onClick={() => setStep(0)}
-              className="rounded-md border border-[var(--line)] px-4 py-2 text-sm text-[var(--fog)] hover:bg-white/5"
-            >
+            <Button type="button" variant="secondary" onClick={() => setStep(0)}>
               Back
-            </button>
+            </Button>
           ) : (
             <span />
           )}
 
           {onFrameworks ? (
-            <button
+            <Button
               type="button"
               disabled={!canContinue()}
               onClick={() => setStep(1)}
-              className="rounded-md bg-[var(--teal)] px-4 py-2.5 text-sm font-semibold text-[#04201d] hover:bg-[var(--teal-bright)] disabled:opacity-50"
             >
               Continue
-            </button>
+            </Button>
           ) : (
-            <button
-              type="submit"
-              className="rounded-md bg-[var(--teal)] px-4 py-2.5 text-sm font-semibold text-[#04201d] hover:bg-[var(--teal-bright)]"
-            >
+            <Button type="submit">
               {editing ? "Save & return" : "Finish setup"}
-            </button>
+            </Button>
           )}
         </div>
       </form>

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { PlanId } from "@/lib/types";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 const PAID: Array<{ id: PlanId; name: string; price: number }> = [
   { id: "team", name: "Team", price: 79 },
@@ -53,40 +55,44 @@ export function BillingActions({ currentPlan }: { currentPlan: PlanId }) {
 
   return (
     <div className="space-y-6">
-      {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
       <div className="grid gap-4 md:grid-cols-3">
-        {PAID.map((p) => (
-          <div
-            key={p.id}
-            className="rounded-xl border border-[var(--line)] bg-white/[0.04] p-5"
-          >
-            <p className="font-[family-name:var(--font-syne)] text-xl text-white">
-              {p.name}
-            </p>
-            <p className="mt-1 text-[var(--fog)]">${p.price}/mo</p>
-            <button
-              type="button"
-              disabled={busy !== null || currentPlan === p.id}
-              onClick={() => checkout(p.id)}
-              className="mt-4 rounded-md bg-[var(--teal)] px-3 py-2 text-sm font-semibold text-[#04201d] disabled:opacity-50"
+        {PAID.map((p) => {
+          const current = currentPlan === p.id;
+          return (
+            <div
+              key={p.id}
+              className={`ep-panel p-5 ${current ? "border-[var(--teal)]/50" : ""}`}
             >
-              {currentPlan === p.id
-                ? "Current plan"
-                : busy === p.id
-                  ? "Redirecting…"
-                  : "Subscribe"}
-            </button>
-          </div>
-        ))}
+              <p className="font-[family-name:var(--font-syne)] text-xl text-white">
+                {p.name}
+              </p>
+              <p className="mt-1 text-[var(--fog)]">${p.price}/mo</p>
+              <Button
+                type="button"
+                disabled={busy !== null || current}
+                onClick={() => checkout(p.id)}
+                className="mt-4"
+                variant={current ? "secondary" : "primary"}
+              >
+                {current
+                  ? "Current plan"
+                  : busy === p.id
+                    ? "Redirecting…"
+                    : "Subscribe"}
+              </Button>
+            </div>
+          );
+        })}
       </div>
-      <button
+      <Button
         type="button"
         onClick={openPortal}
         disabled={busy !== null}
-        className="rounded-md border border-[var(--line)] px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+        variant="secondary"
       >
         {busy === "portal" ? "Opening…" : "Open Stripe Customer Portal"}
-      </button>
+      </Button>
     </div>
   );
 }

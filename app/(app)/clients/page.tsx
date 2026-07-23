@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { EmptyState } from "@/components/app/empty-state";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { FieldLabel, Input, Select } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
 import { createClientOrgAction } from "@/lib/actions/cases";
 import { getCurrentOrg, isOrgAdminRole } from "@/lib/auth";
 import { demoStore } from "@/lib/demo/store";
@@ -32,58 +36,42 @@ export default async function ClientsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-[family-name:var(--font-syne)] text-3xl font-700 text-white">
-          Client organizations
-        </h1>
-        <p className="mt-2 text-[var(--fog)]">
-          Agency plan: parent org managing up to 25 client tenants with RLS
-          isolation.
-        </p>
-      </div>
+      <PageHeader
+        title="Client organizations"
+        description="Legacy Agency plan: parent org can manage up to 25 client tenants (still works). For GridLogic managed packages, /operator + hard tenant_id isolation is the security source of truth — not Agency parent/child."
+      />
 
       {!canManage ? (
-        <p className="rounded-md border border-[var(--line)] bg-white/[0.03] px-4 py-3 text-sm text-[var(--fog)]">
+        <Alert variant="info">
           Only owners and admins can create client organizations.
-        </p>
+        </Alert>
       ) : null}
 
       {!isAgency ? (
-        <div className="rounded-xl border border-[var(--amber)]/40 bg-[var(--amber)]/10 px-4 py-3 text-sm">
+        <Alert variant="warning">
           Upgrade to Agency ($249/mo) to create client organizations.{" "}
-          <Link href="/billing" className="text-[var(--amber)] underline">
+          <Link href="/billing" className="font-semibold text-[var(--amber)] hover:underline">
             Billing
           </Link>
-        </div>
+        </Alert>
       ) : null}
 
       {isAgency && canManage ? (
-        <form action={createClientOrgAction} className="max-w-md space-y-3">
-          <label className="block text-sm">
-            <span className="text-[var(--fog)]">Client name</span>
-            <input
-              name="name"
-              required
-              className="mt-1 w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-white"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="text-[var(--fog)]">Stack</span>
-            <select
-              name="stack_profile"
-              className="mt-1 w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-white"
-            >
+        <form action={createClientOrgAction} className="ep-panel max-w-md space-y-3 p-5">
+          <p className="text-sm font-medium text-white">Add client tenant</p>
+          <FieldLabel>
+            Client name
+            <Input name="name" required />
+          </FieldLabel>
+          <FieldLabel>
+            Stack
+            <Select name="stack_profile" defaultValue="hybrid">
               <option value="hybrid">Hybrid</option>
               <option value="m365">Microsoft 365</option>
               <option value="google">Google Workspace</option>
-            </select>
-          </label>
-          <button
-            type="submit"
-            className="rounded-md bg-[var(--teal)] px-4 py-2 text-sm font-semibold text-[#04201d]"
-          >
-            Add client org
-          </button>
+            </Select>
+          </FieldLabel>
+          <Button type="submit">Add client org</Button>
         </form>
       ) : null}
 
@@ -103,10 +91,7 @@ export default async function ClientsPage() {
       ) : (
         <ul className="space-y-2">
           {clients.map((c) => (
-            <li
-              key={c.id}
-              className="rounded-lg border border-[var(--line)] px-4 py-3 text-sm"
-            >
+            <li key={c.id} className="ep-panel px-4 py-3 text-sm">
               <span className="text-white">{c.name}</span>
               <span className="text-[var(--fog)]"> · {c.stack_profile}</span>
             </li>

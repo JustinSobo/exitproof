@@ -5,6 +5,10 @@ import {
   inviteMemberAction,
   removeMemberAction,
 } from "@/lib/actions/members";
+import { Alert } from "@/components/ui/alert";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { FieldLabel, Input, Select } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentOrg, isOrgAdminRole } from "@/lib/auth";
 import { FRAMEWORKS } from "@/lib/compliance/frameworks";
 import { demoStore } from "@/lib/demo/store";
@@ -69,51 +73,49 @@ export default async function SettingsPage({
 
   return (
     <div className="mx-auto max-w-xl space-y-10">
-      <div>
-        <h1 className="font-[family-name:var(--font-syne)] text-3xl font-700 text-white">
-          Organization settings
-        </h1>
-        <p className="mt-2 text-[var(--fog)]">
-          Stack profile, SSO status, and members. Re-run the questionnaire when
-          your frameworks or tools change.
-        </p>
-      </div>
+      <PageHeader
+        title="Organization settings"
+        description="Stack profile, SSO status, and members. Re-run the questionnaire when your frameworks or tools change."
+      />
 
-      {params.error ? (
-        <p className="rounded-md border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-3 py-2 text-sm text-[#ffb4ae]">
-          {params.error}
-        </p>
-      ) : null}
-      {params.saved ? (
-        <p className="rounded-md border border-[var(--teal)]/40 bg-[var(--teal)]/10 px-3 py-2 text-sm text-[var(--teal-bright)]">
-          Settings saved.
-        </p>
-      ) : null}
+      {params.error ? <Alert variant="danger">{params.error}</Alert> : null}
+      {params.saved ? <Alert variant="success">Settings saved.</Alert> : null}
       {params.invited ? (
-        <p className="rounded-md border border-[var(--teal)]/40 bg-[var(--teal)]/10 px-3 py-2 text-sm text-[var(--teal-bright)]">
+        <Alert variant="success">
           Invited {params.invited}
           {isDemoMode() ? " (demo — added as member)" : ""}.
-        </p>
+        </Alert>
       ) : null}
-      {params.removed ? (
-        <p className="text-sm text-[var(--fog)]">Member removed.</p>
-      ) : null}
+      {params.removed ? <Alert variant="info">Member removed.</Alert> : null}
 
       {!canManage ? (
-        <p className="rounded-md border border-[var(--line)] bg-white/[0.03] px-3 py-2 text-sm text-[var(--fog)]">
+        <Alert variant="info">
           You have member access. Only owners and admins can change settings or
           manage invites.
-        </p>
+        </Alert>
       ) : null}
 
       <section className="space-y-3">
         <h2 className="font-[family-name:var(--font-syne)] text-xl font-600 text-white">
           SSO status
         </h2>
-        <div className="rounded-xl border border-[var(--line)] bg-white/[0.03] px-4 py-3 text-sm">
+        <div className="ep-panel px-4 py-3 text-sm">
           <p className="font-medium text-white">{ssoStatus.label}</p>
           <p className="mt-1 text-[var(--fog)]">{ssoStatus.detail}</p>
         </div>
+        <p className="text-sm text-[var(--fog)]">
+          Graph directory connector and consent health:{" "}
+          <Link
+            href="/connectors"
+            className="text-[var(--teal-bright)] hover:underline"
+          >
+            Connectors
+          </Link>
+          {ctx.org.graph_consent_status
+            ? ` · ${ctx.org.graph_consent_status}`
+            : ""}
+          {ctx.org.auto_evidence_enabled ? " · auto-evidence on" : ""}
+        </p>
       </section>
 
       <section className="space-y-3">
@@ -122,12 +124,9 @@ export default async function SettingsPage({
             Frameworks & onboarding
           </h2>
           {canManage ? (
-            <Link
-              href="/onboarding?edit=1"
-              className="text-sm font-medium text-[var(--teal-bright)] hover:underline"
-            >
+            <ButtonLink href="/onboarding?edit=1" variant="ghost" size="sm">
               Re-run questionnaire
-            </Link>
+            </ButtonLink>
           ) : null}
         </div>
         <p className="text-sm text-[var(--fog)]">
@@ -158,15 +157,10 @@ export default async function SettingsPage({
 
       {canManage ? (
         <form action={updateOrgSettingsAction} className="space-y-4">
-          <label className="block text-sm">
-            <span className="text-[var(--fog)]">Organization name</span>
-            <input
-              name="name"
-              defaultValue={ctx.org.name}
-              required
-              className="mt-1 w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-white outline-none focus:border-[var(--teal)]"
-            />
-          </label>
+          <FieldLabel>
+            Organization name
+            <Input name="name" defaultValue={ctx.org.name} required />
+          </FieldLabel>
           <fieldset className="space-y-2 text-sm">
             <legend className="text-[var(--fog)]">Stack profile</legend>
             {(
@@ -187,12 +181,7 @@ export default async function SettingsPage({
               </label>
             ))}
           </fieldset>
-          <button
-            type="submit"
-            className="rounded-md bg-[var(--teal)] px-4 py-2 text-sm font-semibold text-[#04201d]"
-          >
-            Save settings
-          </button>
+          <Button type="submit">Save settings</Button>
         </form>
       ) : (
         <div className="space-y-2 text-sm text-[var(--fog)]">
@@ -229,12 +218,9 @@ export default async function SettingsPage({
                 {canManage && m.user_id !== ctx.user.id ? (
                   <form action={removeMemberAction}>
                     <input type="hidden" name="member_id" value={m.id} />
-                    <button
-                      type="submit"
-                      className="text-xs text-[#ffb4ae] hover:underline"
-                    >
+                    <Button type="submit" variant="danger" size="sm">
                       Remove
-                    </button>
+                    </Button>
                   </form>
                 ) : null}
               </div>
@@ -256,33 +242,23 @@ export default async function SettingsPage({
               action={inviteMemberAction}
               className="mt-3 flex flex-wrap items-end gap-2"
             >
-              <label className="min-w-[14rem] flex-1 text-xs text-[var(--fog)]">
+              <FieldLabel className="min-w-[14rem] flex-1 text-xs">
                 Email
-                <input
+                <Input
                   type="email"
                   name="email"
                   required
                   placeholder="colleague@company.com"
-                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm text-white"
                 />
-              </label>
-              <label className="text-xs text-[var(--fog)]">
+              </FieldLabel>
+              <FieldLabel className="text-xs">
                 Role
-                <select
-                  name="role"
-                  defaultValue="member"
-                  className="mt-1 block rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm text-white"
-                >
+                <Select name="role" defaultValue="member">
                   <option value="member">Member</option>
                   <option value="admin">Admin</option>
-                </select>
-              </label>
-              <button
-                type="submit"
-                className="rounded-md bg-[var(--teal)] px-3 py-2 text-sm font-semibold text-[#04201d]"
-              >
-                Send invite
-              </button>
+                </Select>
+              </FieldLabel>
+              <Button type="submit">Send invite</Button>
             </form>
           </div>
         ) : null}

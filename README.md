@@ -59,6 +59,9 @@ ALLOW_DOMAIN_JIT=false   # default; never enable with GRIDLOGIC_MANAGED
    - `supabase/migrations/004_roles.sql`
    - `supabase/migrations/005_frameworks_and_evidence_integrity.sql`
    - `supabase/migrations/006_tenant_hardening.sql` ← immutable `tenant_id`
+   - `supabase/migrations/007_graph_connector.sql` ← Graph consent (Phase 3)
+   - `supabase/migrations/008_operator_jit.sql` ← operator staff + JIT grants (Phase 2)
+   - `supabase/migrations/009_ad_connector.sql` ← Hybrid AD (Phase 4)
 3. Enable Email auth (password + magic link) for break-glass / demo fallback
 4. Confirm Storage bucket `evidence` exists (created in `001_initial.sql`)
 5. Set env vars:
@@ -117,7 +120,42 @@ npm run provision -- --dry-run \
   --entra-tenant-id "<customer-entra-directory-guid>"
 ```
 
-**Out of scope for this phase:** SCIM, custom SAML apps, Entra group → ExitProof role sync, Graph connector (Phase 3).
+**Out of scope for this phase:** SCIM, custom SAML apps, Entra group → ExitProof role sync.
+
+### 2b. Microsoft Graph read-only connector (Phase 3)
+
+GridLogic registers a **multi-tenant** Entra application. Each customer admin grants **admin consent**, creating an Enterprise Application in their tenant. ExitProof then reads directory state (no write/disable).
+
+**Application permissions (read-only — grant admin consent):**
+
+| Permission | Purpose |
+|------------|---------|
+| `User.Read.All` | Account enabled/disabled, UPN, mail |
+| `AuditLog.Read.All` | Disable / directory audit events |
+| `Directory.Read.All` | Group/role context as needed |
+
+**Explicitly forbidden until Phase 7:** `User.ReadWrite.All`, disable user, revoke sessions, mailbox/Intune wipe.
+
+**App registration checklist**
+
+1. Entra admin center → **App registrations** → **New registration**
+2. Name: `ExitProof Graph Audit` (GridLogic multi-tenant)
+3. Supported account types: **Accounts in any organizational directory** (multi-tenant)
+4. No redirect URI required for client-credentials workers; for in-product admin consent, add Web redirect: `https://<app-host>/connectors?consent=1`
+5. **API permissions** → Microsoft Graph → **Application** permissions above → **Grant admin consent** for the GridLogic home tenant (customers consent via in-app URL)
+6. **Certificates & secrets** (or federated credential) → store per-customer material in Azure Key Vault as `graph-creds-{tenantId}` — never in Postgres
+7. Set env: `GRAPH_APP_CLIENT_ID=<application-client-id>`, `AZURE_KEY_VAULT_URI=https://….vault.azure.net`
+
+**In-product flow**
+
+1. Bind customer Entra directory ID (`entra_tenant_id`) at provision / **Connectors**
+2. Customer Global Admin opens **Open admin consent** on `/connectors`
+3. Consent health → `healthy`; directory snapshots run for leaver emails on case detail
+4. Optional: enable **Graph auto-evidence** to attach hashed JSON snapshots to the IdP disable checklist step (`evidence.auto_collected`)
+
+**DEMO_MODE:** no Graph credentials required. Seed org has healthy consent + auto-evidence; case `jordan.lee@northwind.example` shows **Entra still enabled** via `DemoGraphClient`. Use **Simulate consent** / **Refresh Graph snapshot** on Connectors and case detail.
+
+See `lib/connectors/graph/`, migration `007_graph_connector.sql`, [ADR-002](docs/adr/002-graph-readonly-and-ad-connector.md).
 
 ### 3. Stripe
 
@@ -169,7 +207,7 @@ Set all env vars from `.env.example`. Set `NEXT_PUBLIC_APP_URL` to your producti
 | Trial | Free | 3 offboards total while unpaid |
 | Team | $79/mo | 1 org, 25 offboards/mo, 90-day retention |
 | Growth | $149/mo | Unlimited offboards, 365-day retention |
-| Agency | $249/mo | Parent + up to 25 client orgs, unlimited offboards |
+| Agency | $249/mo | Legacy parent + up to 25 client orgs (still sold). GridLogic operator console is preferred for managed isolation. |
 
 ## Key routes
 
@@ -181,7 +219,10 @@ Set all env vars from `.env.example`. Set `NEXT_PUBLIC_APP_URL` to your producti
 | `/cases`, `/cases/new`, `/cases/[id]` | Offboarding cases + checklist |
 | `/settings` | Stack profile (M365 / Google / hybrid) |
 | `/billing` | Stripe Checkout + Customer Portal |
-| `/clients` | Agency client orgs |
+| `/clients` | Legacy Agency client orgs (not GridLogic security boundary) |
+| `/operator` | GridLogic operator console (tenants, JIT, onboard) |
+| `/operator/onboard` | GridLogic customer onboard wizard |
+| `/operator/docs` | Provision CLI / infra runbook links |
 | `/api/export/[caseId]/pdf` | Evidence Pack PDF |
 | `/api/export/[caseId]/csv` | Evidence Pack CSV |
 | `/api/stripe/*` | Checkout, portal, webhook |
@@ -193,6 +234,9 @@ Set all env vars from `.env.example`. Set `NEXT_PUBLIC_APP_URL` to your producti
 - `lib/pdf/evidence-pack.tsx` — PDF document
 - `lib/demo/store.ts` — in-memory demo backend
 - `lib/tenancy.ts` / `lib/org-bootstrap.ts` — tenant_id + JIT harden
+- `lib/connectors/ad.ts` — Hybrid AD mismatch + snapshot helpers (Phase 4)
+- `apps/connector/` — outbound Hybrid Connector skeleton (mock AD for CI)
+- `docs/connectors/hybrid-ad.md` — mTLS / OU / revoke protocol
 - `supabase/migrations/*` — schema, RLS, seeds
 - `infra/*` — Azure Bicep spine (Phase 1 stubs)
 - `scripts/provision-customer.ts` — GridLogic provision checklist CLI
@@ -209,6 +253,10 @@ npm test           # vitest
 npm run provision  # GridLogic tenant provision dry-run
 ```
 
+## Hybrid AD connector (Phase 4)
+
+See [`docs/connectors/hybrid-ad.md`](docs/connectors/hybrid-ad.md) and [`apps/connector/README.md`](apps/connector/README.md). Demo case shows cloud disabled / on-prem AD still enabled mismatch.
+
 ## Out of scope (MVP)
 
-SCIM/IdP auto-revoke, MDM APIs, HRIS sync, mobile apps. Graph/AD connectors are charter Phases 3–4.
+SCIM/IdP auto-revoke, MDM APIs, HRIS sync, mobile apps. Graph connector is charter Phase 3; AD connector foundation is Phase 4 (this repo).

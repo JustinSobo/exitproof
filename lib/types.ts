@@ -8,6 +8,14 @@ export type MemberRole = "owner" | "admin" | "member";
 
 export type ChecklistItemStatus = "pending" | "done" | "skipped" | "blocked";
 
+/** Entra admin consent health for GridLogic Graph RO multi-tenant app (Phase 3). */
+export type GraphConsentStatus =
+  | "not_started"
+  | "pending"
+  | "healthy"
+  | "revoked"
+  | "error";
+
 export interface Organization {
   id: string;
   name: string;
@@ -31,8 +39,30 @@ export interface Organization {
   selected_frameworks?: string[];
   /** Customer Entra directory ID — required under GRIDLOGIC_MANAGED. */
   entra_tenant_id?: string | null;
+  /**
+   * When true, customer workspace expects Entra SSO (GridLogic onboard wizard).
+   * Password login remains break-glass until fully enforced.
+   */
+  sso_enforced?: boolean;
   onboarding_completed_at?: string | null;
+  /** Graph RO connector consent health (migration 007). */
+  graph_consent_status?: GraphConsentStatus;
+  graph_consented_at?: string | null;
+  graph_last_sync_at?: string | null;
+  /** When true, Graph snapshots may attach hashed system-collected evidence. */
+  auto_evidence_enabled?: boolean;
+  /** SKU add-on: Hybrid AD Audit (Phase 4). */
+  hybrid_ad_enabled?: boolean;
+  /** Optional system-collected AD evidence jobs (Phase 4 stub). */
+  ad_auto_evidence_enabled?: boolean;
 }
+
+export type {
+  AdConnector,
+  AdConnectorStatus,
+  AdDirectorySnapshot,
+  CaseDirectoryStatus,
+} from "@/lib/connectors/ad";
 
 export interface OrgMember {
   id: string;
