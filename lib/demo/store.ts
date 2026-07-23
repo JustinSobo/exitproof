@@ -84,6 +84,9 @@ function seedDemoIfNeeded(state: DemoState) {
     offboards_month_key: monthKey(),
     trial_offboards_used: 1,
     created_at: new Date().toISOString(),
+    selected_frameworks: ["fedramp", "cmmc-l2", "soc2"],
+    entra_tenant_id: null,
+    onboarding_completed_at: new Date().toISOString(),
   };
   state.orgs.push(org);
   state.members.push({
@@ -132,6 +135,9 @@ function seedDemoIfNeeded(state: DemoState) {
       completed_by: step.sort_order === 1 ? user.email : null,
       sort_order: step.sort_order,
       category: step.category,
+      evidence_hint: step.evidenceHint ?? null,
+      control_refs: [...(step.controlRefs ?? [])],
+      notified_at: null,
     });
   }
 
@@ -223,6 +229,9 @@ export const demoStore = {
       offboards_month_key: monthKey(),
       trial_offboards_used: 0,
       created_at: new Date().toISOString(),
+      selected_frameworks: [],
+      entra_tenant_id: null,
+      onboarding_completed_at: null,
     };
     state.orgs.push(org);
     state.members.push({
@@ -270,6 +279,9 @@ export const demoStore = {
         offboards_month_key: monthKey(),
         trial_offboards_used: 0,
         created_at: new Date().toISOString(),
+        selected_frameworks: [],
+        entra_tenant_id: null,
+        onboarding_completed_at: null,
       };
       state.orgs.push(org);
       state.members.push({
@@ -349,6 +361,9 @@ export const demoStore = {
       offboards_month_key: monthKey(),
       trial_offboards_used: 0,
       created_at: new Date().toISOString(),
+      selected_frameworks: [...(parent.selected_frameworks ?? [])],
+      entra_tenant_id: null,
+      onboarding_completed_at: null,
     };
     state.orgs.push(org);
     return org;
@@ -452,6 +467,9 @@ export const demoStore = {
         completed_by: null,
         sort_order: step.sort_order,
         category: step.category,
+        evidence_hint: step.evidenceHint ?? null,
+        control_refs: [...(step.controlRefs ?? [])],
+        notified_at: null,
       });
     }
 
@@ -571,6 +589,9 @@ export const demoStore = {
       storage_path: storagePath,
       uploaded_by: user.email,
       created_at: new Date().toISOString(),
+      content_hash: null,
+      mime_type: null,
+      byte_size: null,
     };
     state.evidence.push(evidence);
 
