@@ -2,16 +2,18 @@
 
 Audit-ready IT employee offboarding: stack-aware checklists, evidence attachments, append-only audit events, PDF/CSV Evidence Pack export, and Stripe billing.
 
-Independent SaaS product — no partner branding or playbooks.
+**Production target (GridLogic-sold):** Microsoft Azure, operated by GridLogic IT as a managed package with hard tenant isolation. See the product & security charter: [`docs/CHARTER.md`](docs/CHARTER.md).
+
+The stack below is the current demo / transitional development path (Vercel + Supabase). Azure Container Apps, Azure SQL, Blob, and Key Vault supersede that path for GridLogic production (Phase 1+).
 
 ## Stack
 
 - Next.js App Router + TypeScript + Tailwind CSS
-- Supabase (Postgres + Auth + Storage) with RLS
+- Supabase (Postgres + Auth + Storage) with RLS — *transitional; not the GridLogic production target*
 - Stripe Checkout + Customer Portal + webhooks
 - Resend for overdue critical-step emails
 - `@react-pdf/renderer` for Evidence Pack PDFs
-- Deploy-ready for Vercel
+- Deploy-ready for Vercel — *demo/dev; production home is Azure per charter*
 
 ## Quick start (demo mode)
 
