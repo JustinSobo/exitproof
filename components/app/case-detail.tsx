@@ -208,6 +208,7 @@ export function CaseDetailClient({
                   Upload evidence
                   <input
                     type="file"
+                    accept="image/png,image/jpeg,image/webp,application/pdf,.png,.jpg,.jpeg,.webp,.pdf"
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];

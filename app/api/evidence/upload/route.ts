@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentOrg } from "@/lib/auth";
 import { demoStore } from "@/lib/demo/store";
 import { isDemoMode } from "@/lib/env";
+import { validateEvidenceUpload, MAX_EVIDENCE_BYTES } from "@/lib/evidence/validate-upload";
 
 export async function POST(request: Request) {
   const ctx = await getCurrentOrg();
@@ -13,20 +14,37 @@ export async function POST(request: Request) {
   const itemId = String(form.get("item_id") || "");
   const file = form.get("file");
 
-  if (!itemId || !(file instanceof File)) {
+  if (!(file instanceof File)) {
     return NextResponse.json({ error: "item_id and file required" }, { status: 400 });
   }
 
+  const validated = validateEvidenceUpload({
+    itemId,
+    fileName: file.name,
+    mimeType: file.type,
+    size: file.size,
+  });
+  if (!validated.ok) {
+    return NextResponse.json({ error: validated.error }, { status: 400 });
+  }
+
   const bytes = Buffer.from(await file.arrayBuffer());
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  // Re-check after read in case declared size was wrong.
+  if (bytes.byteLength > MAX_EVIDENCE_BYTES) {
+    return NextResponse.json(
+      { error: "File must be 10 MB or smaller" },
+      { status: 400 },
+    );
+  }
+
+  const safeName = validated.data.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
 
   if (isDemoMode()) {
-    const path = `demo/${ctx.org.id}/${itemId}/${Date.now()}-${safeName}`;
-    // Store path only — content not persisted in demo memory
+    const path = `demo/${ctx.org.id}/${validated.data.itemId}/${Date.now()}-${safeName}`;
     void bytes;
     try {
       const evidence = demoStore.addEvidence(
-        itemId,
+        validated.data.itemId,
         safeName,
         path,
         ctx.user,
@@ -44,7 +62,7 @@ export async function POST(request: Request) {
   const { data: item } = await supabase
     .from("checklist_items")
     .select("*, offboarding_cases!inner(id, org_id)")
-    .eq("id", itemId)
+    .eq("id", validated.data.itemId)
     .single();
 
   if (!item) {
@@ -52,11 +70,11 @@ export async function POST(request: Request) {
   }
 
   const caseRow = item.offboarding_cases as { id: string; org_id: string };
-  const path = `${caseRow.org_id}/${caseRow.id}/${itemId}/${Date.now()}-${safeName}`;
+  const path = `${caseRow.org_id}/${caseRow.id}/${validated.data.itemId}/${Date.now()}-${safeName}`;
 
   const { error: uploadError } = await supabase.storage
     .from("evidence")
-    .upload(path, bytes, { contentType: file.type || "application/octet-stream" });
+    .upload(path, bytes, { contentType: validated.data.mimeType });
 
   if (uploadError) {
     return NextResponse.json({ error: uploadError.message }, { status: 500 });
@@ -65,7 +83,7 @@ export async function POST(request: Request) {
   const { data: evidence, error } = await supabase
     .from("evidence_files")
     .insert({
-      checklist_item_id: itemId,
+      checklist_item_id: validated.data.itemId,
       case_id: caseRow.id,
       org_id: caseRow.org_id,
       file_name: safeName,
@@ -85,7 +103,12 @@ export async function POST(request: Request) {
     actor_id: ctx.user.id,
     actor_email: ctx.user.email,
     event_type: "evidence.uploaded",
-    payload: { item_id: itemId, file_name: safeName },
+    payload: {
+      item_id: validated.data.itemId,
+      file_name: safeName,
+      mime_type: validated.data.mimeType,
+      size: bytes.byteLength,
+    },
   });
 
   return NextResponse.json({ evidence });
